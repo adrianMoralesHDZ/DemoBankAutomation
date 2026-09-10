@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="DemoBank Automation Suite" parallel="false" verbose="2">
+
+    <listeners>
+        <listener class-name="tests.TestListener"/>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+
+    <!-- Módulo 1: Login (4 casos) -->
+    <test name="Login Tests">
+        <classes>
+            <class name="tests.LoginTests"/>
+        </classes>
+    </test>
+
+    <!-- Módulo 2: Home (4 casos) -->
+    <test name="Home Tests">
+        <classes>
+            <class name="tests.HomeTests"/>
+        </classes>
+    </test>
+
+    <!-- Módulo 3: Movimientos (4 casos) -->
+    <test name="Movements Tests">
+        <classes>
+            <class name="tests.MovementsTests"/>
+        </classes>
+    </test>
+
+    <!-- Módulo 4: Transferencias (5 casos) -->
+    <test name="Transfer Tests">
+        <classes>
+            <class name="tests.TransferTests"/>
+        </classes>
+    </test>
+
+    <!-- Módulo 5: Pagos de Servicios (4+ casos) -->
+    <test name="Pay Services Tests">
+        <classes>
+            <class name="tests.PayTests"/>
+        </classes>
+    </test>
+
+    <!-- Regresión visual con OpenCV (1 caso) -->
+    <test name="OpenCV Regression">
+        <classes>
+            <class name="tests.OpenCVRegressionTest"/>
+        </classes>
+    </test>
+
+</suite>

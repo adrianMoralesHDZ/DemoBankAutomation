@@ -31,7 +31,7 @@ public class LoginTests {
         DriverFactory.getDriver();
         loginPage = new LoginPage(DriverFactory.getDriver());
         homePage = new HomePage(DriverFactory.getDriver());
-        // Captura inicial del app recien abierta
+
         AllureHelper.screenshot("[INICIO] App DemoBank recien abierta");
         AllureHelper.attachPageInfo();
     }
@@ -47,7 +47,7 @@ public class LoginTests {
      * CASO 1: Autenticacion Exitosa con credenciales validas.
      */
     @Test(priority = 1, groups = {"login", "smoke"})
-    @Description("Login exitoso con credenciales demo@demo.com / 1234. "
+    @Description("Login exitoso con credenciales demo@demo.com / 1234 "
             + "Capturas paso a paso agregadas al reporte Allure.")
     @Severity(SeverityLevel.CRITICAL)
     public void testLoginExitoso() {
@@ -89,21 +89,31 @@ public class LoginTests {
 
     /**
      * CASO 2: Email vacio -> error.
+     *
+     * JUSTIFICACION DE LA PRUEBA (PDF Modulo 1, caso 2):
+     * Validar el comportamiento cuando el email esta vacio:
+     *   - La app DEBE mostrar un mensaje de error
+     *   - La navegacion al Home DEBE estar bloqueada
      */
     @Test(priority = 2, groups = {"login", "negative"})
     @Description("Validacion: email vacio muestra error. Capturas paso a paso.")
     @Severity(SeverityLevel.CRITICAL)
     public void testEmailVacio() {
+        // 1. Limpiar email (es el campo prellenado en DemoBank)
         loginPage.clearEmail();
+        // 2. Escribir password valido
         loginPage.typePassword(TestDataProvider.VALID_PASSWORD);
         AllureHelper.screenshot("[PASO 1] Email vacio, password lleno");
 
+        // 3. Tap login - debe fallar
         loginPage.tapLoginButton();
         AllureHelper.screenshot("[PASO 2] Despues de tap login con email vacio");
 
-        Assert.assertTrue(loginPage.isErrorMessageDisplayed(),
+        // 4. Verificar mensaje de error
+        boolean errorShown = loginPage.isErrorMessageDisplayed();
+        AllureHelper.screenshot("[PASO 3] Mensaje de error visible: " + errorShown);
+        Assert.assertTrue(errorShown,
                 "Debe mostrar error por email vacio");
-        AllureHelper.screenshot("[PASO 3] Mensaje de error visible");
     }
 
     /**
@@ -113,14 +123,20 @@ public class LoginTests {
     @Description("Validacion: password vacio muestra error. Capturas paso a paso.")
     @Severity(SeverityLevel.CRITICAL)
     public void testPasswordVacio() {
+        // Email valido (ya esta prellenado, pero lo reescribimos)
         loginPage.typeEmail(TestDataProvider.VALID_EMAIL);
+        // Limpiar password
         loginPage.clearPassword();
         AllureHelper.screenshot("[PASO 1] Email lleno, password vacio");
 
+        // Tap login - debe fallar
         loginPage.tapLoginButton();
         AllureHelper.screenshot("[PASO 2] Despues de tap login con password vacio");
 
-        Assert.assertTrue(loginPage.isErrorMessageDisplayed(),
+        // Verificar mensaje de error
+        boolean errorShown = loginPage.isErrorMessageDisplayed();
+        AllureHelper.screenshot("[PASO 3] Mensaje de error visible: " + errorShown);
+        Assert.assertTrue(errorShown,
                 "Debe mostrar error por password vacio");
     }
 

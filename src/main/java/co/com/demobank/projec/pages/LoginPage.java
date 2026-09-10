@@ -72,7 +72,7 @@ public class LoginPage {
      */
     public void typeEmail(String email) {
         WebElement field = WaitUtils.waitForVisibility(emailField);
-        field.clear();
+        // field.clear() no funciona bien en DemoBank, usa sendKeys directo
         field.sendKeys(email);
     }
 
@@ -81,15 +81,42 @@ public class LoginPage {
      */
     public void typePassword(String password) {
         WebElement field = WaitUtils.waitForVisibility(passwordField);
-        field.clear();
         field.sendKeys(password);
     }
 
     /**
      * Toca el botón "Iniciar sesión".
+     * Despues espera a que la pantalla cambie (es Home o pantalla de error).
      */
     public void tapLoginButton() {
         WaitUtils.safeClick(loginButton);
+        waitForScreenChange();
+    }
+
+    /**
+     * Espera EXPLICITA a que la pantalla cambie despues de login.
+     * Sin Thread.sleep().
+     */
+    private void waitForScreenChange() {
+        try {
+            // Esperar a que el boton "Iniciar sesion" desaparezca
+            org.openqa.selenium.support.ui.WebDriverWait wait =
+                    new org.openqa.selenium.support.ui.WebDriverWait(driver,
+                            java.time.Duration.ofSeconds(10));
+            wait.until(d -> {
+                try {
+                    java.util.List<WebElement> btns = d.findElements(
+                            By.xpath("//*[@text='Iniciar sesión']")
+                    );
+                    return btns.isEmpty() || !btns.get(0).isDisplayed();
+                } catch (Exception e) {
+                    return true;
+                }
+            });
+            System.out.println("[OK] La pantalla cambio despues de tap login");
+        } catch (Exception e) {
+            System.out.println("[WARN] timeout esperando cambio de pantalla: " + e.getMessage());
+        }
     }
 
     /**

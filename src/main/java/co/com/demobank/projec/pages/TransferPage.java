@@ -286,25 +286,27 @@ public class TransferPage {
         }
     }
 
-    // === PASO 3: Confirmar ===
+// === PASO 3: Confirmar ===
     public void tapConfirm() {
         try {
-            // 1. Por content-desc exacto
             WebElement btn = driver.findElement(confirmButton);
             btn.click();
             System.out.println("[OK] tapConfirm: click via content-desc");
         } catch (Exception e1) {
             try {
-                // 2. Por TextView con texto exacto
                 WebElement btn = driver.findElement(confirmButtonAlt);
                 btn.click();
                 System.out.println("[OK] tapConfirm: click via TextView");
             } catch (Exception e2) {
                 try {
-                    // 3. Por content-desc parcial (contiene "Confirmar")
-                    WebElement btn = driver.findElement(confirmButtonFallBack);
-                    btn.click();
-                    System.out.println("[OK] tapConfirm: click via content-desc parcial");
+                    // 3. Tap directo por coordenadas (centro del boton: 610, 793)
+                    org.openqa.selenium.JavascriptExecutor js =
+                            (org.openqa.selenium.JavascriptExecutor) driver;
+                    java.util.Map<String, Object> args = new java.util.HashMap<>();
+                    args.put("x", 610);
+                    args.put("y", 793);  // coords exactas del dump
+                    js.executeScript("mobile: tap", args);
+                    System.out.println("[OK] tapConfirm: tap por coordenadas (610, 793)");
                 } catch (Exception e3) {
                     System.out.println("[FAIL] tapConfirm: todos los intentos fallaron");
                     throw e3;

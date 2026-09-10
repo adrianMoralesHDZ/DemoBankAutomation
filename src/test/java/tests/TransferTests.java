@@ -53,7 +53,6 @@ public class TransferTests {
     @Description("Transferencia exitosa de $100.000 al primer contacto (Maria Lopez)")
     @Severity(SeverityLevel.CRITICAL)
 public void testTransferenciaExitosa() {
-        // Monto alto para asegurar que la app lo acepte (los muy bajos muestran "Ingresa un monto valido")
         double monto = 100000;
 
         stepSelectContact();
@@ -63,7 +62,45 @@ public void testTransferenciaExitosa() {
         AllureHelper.screenshot("[Paso 2] Monto escrito: $" + monto);
 
         stepConfirmTransfer();
-        AllureHelper.screenshot("[PASO 3 OK] Transferencia confirmada - esperando exito");
+        AllureHelper.screenshot("[PASO 3 OK] Transferencia confirmada - esperando pantalla de exito");
+
+        // ====== PANTALLA DE EXITO: Validaciones ======
+
+        stepVerifySuccessScreen();
+        AllureHelper.screenshot("[Paso 4] Pantalla de exito con check verde");
+    }
+
+    @Step("Verificar pantalla de exito: titulo, monto via OCR y OpenCV")
+    private void stepVerifySuccessScreen() {
+        TransferSuccessPage successPage = new TransferSuccessPage(DriverFactory.getDriver());
+
+        // 1. Validar que estamos en pantalla de exito (localizador)
+        boolean onSuccess = successPage.isOnSuccessScreen();
+        Assert.assertTrue(onSuccess, "Debe estar en pantalla de exito despues de confirmar");
+
+        // 2. OCR: leer titulo "¡Transferencia exitosa!"
+        String titulo = successPage.readSuccessTitle();
+        Assert.assertTrue(titulo.toLowerCase().contains("exitosa") ||
+                titulo.toLowerCase().contains("éxito"),
+                "El titulo OCR debe contener 'exitosa'. Leido: " + titulo);
+
+        // 3. OCR: leer el monto mostrado en pantalla
+        String montoEnPantalla = successPage.getDisplayedAmountText();
+        Assert.assertTrue(montoEnPantalla.contains("$100") || montoEnPantalla.contains("100000") ||
+                        montoEnPantalla.contains("100000.00"),
+                "El monto OCR en pantalla debe ser 100000. Leido: '" + montoEnPantalla + "'");
+
+        // 4. OCR: leer destinatario
+        String destinatario = successPage.getRecipientNameShown();
+        Assert.assertTrue(destinatario.toLowerCase().contains("maria") ||
+                        destinatario.toLowerCase().contains("lópez") ||
+                        destinatario.toLowerCase().contains("lopez") ||
+                        destinatario.toLowerCase().contains("mara") ||
+                        destinatario.toLowerCase().contains("lpez"),
+                "El destinatario debe ser Maria Lopez. Leido: '" + destinatario + "'");
+
+        // 5. Validacion EXTRA: tap BackToHome
+        // (solo lo hace si lo llamaramos desde fuera, no aqui)
     }
 
     @Step("Seleccionar primer contacto")

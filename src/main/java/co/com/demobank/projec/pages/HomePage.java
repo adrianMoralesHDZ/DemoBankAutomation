@@ -1,7 +1,6 @@
 package co.com.demobank.projec.pages;
 
 import co.com.demobank.projec.utils.DriverFactory;
-import co.com.demobank.projec.utils.OCRUtils;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
@@ -18,18 +17,20 @@ import org.openqa.selenium.WebElement;
  *   - Boton logout (icono arriba a la derecha)
  *
  * CASOS DE PRUEBA DEL PDF (Modulo 2):
- *   - Consistencia del Saldo Consolidado (OCR)
+ *   - Consistencia del Saldo Consolidado
  *   - Interactividad de Cuentas (cambio entre tabs)
  *   - Accesos rapidos (Transferir, Pagar, Movimientos)
  *   - Cierre de Sesion Seguro (Logout)
  *
- * JUSTIFICACION OCR (PDF):
- *   El saldo esta sobre una tarjeta con gradiente (efecto visual especial).
- *   Validamos INDEPENDIENTEMENTE del localizador usando OCR (Tess4J).
- *   Esto simula el caso del PDF donde el componente NO tendria testID.
+ * LOCALIZADORES REALES (adb uiautomator dump):
+ *   El dump confirma que TODOS los textos del Home son android.widget.TextView
+ *   con atributo @text perfectamente accesible. No hay tarjetas con gradiente
+ *   ni componentes graficos sin accesibilidad. Los localizadores nativos
+ *   son confiables en este modulo.
  *
- * LOCALIZADORES REALES (adb shell uiautomator dump):
- *   La app NO usa resource-id. Usa content-desc y text.
+ *   Los OCR justificados del PDF se implementan en otros modulos donde
+ *   los localizadores nativos NO son confiables (ver TransferTests y
+ *   PayTests).
  * ============================================================================
  */
 public class HomePage {
@@ -164,62 +165,70 @@ public class HomePage {
     }
 
     /**
-     * Lee el saldo total mediante OCR.
+     * Lee el saldo total del TextView nativo y lo convierte a double.
+     *
+     * El dump real confirma que "$2455450.00" es un TextView con @text.
+     * No requiere OCR.
      *
      * @return saldo consolidado como double (ej: 2455450.00)
      */
-    public double getConsolidatedBalanceByOCR() {
-        try {
-            WebElement element = WaitUtils.waitForVisibility(balanceForOCR);
-            String text = element.getText();
-            System.out.println("Saldo (text directo): '" + text + "'");
-            return parseAmount(text);
-        } catch (Exception e) {
-            System.out.println("Fallo lectura directa, usando OCR sobre elemento");
-            WebElement element = WaitUtils.waitForVisibility(balanceForOCR);
-            return OCRUtils.extractCurrencyAmount(element);
-        }
+    public double getConsolidatedBalanceTextAsAmount() {
+        String text = getConsolidatedBalanceText();
+        return parseAmount(text);
     }
 
     /**
-     * Convierte texto tipo "$2455450.00" o "1.050.000" a double.
+     * Convierte texto con monto a double.
+     *
+     * Acepta formatos como:
+     *   "$2455450.00"                → 2455450.00
+     *   "**** 4821 · $1500000.00"   → 1500000.00  (extrae solo el monto)
+     *   "+$1800.00"                  → 1800.00
+     *   "-$54.20"                    → 54.20
+     *
+     * Estrategia: extrae el ultimo numero con decimales del texto,
+     * eliminando separadores de miles (puntos) y signos no numericos.
      */
     private double parseAmount(String text) {
         if (text == null || text.isEmpty()) return 0;
-        String cleaned = text
-                .replace("$", "")
-                .replaceAll("\\s+", "")
-                .replace(",", "");
-        try {
-            return Double.parseDouble(cleaned);
-        } catch (NumberFormatException e) {
-            if (cleaned.contains(".")) {
-                int lastDot = cleaned.lastIndexOf('.');
-                String decimal = cleaned.substring(lastDot);
-                if (decimal.length() <= 3) {
-                    String integer = cleaned.substring(0, lastDot).replace(".", "");
-                    String result = integer + decimal;
-                    try { return Double.parseDouble(result); } catch (Exception x) { return 0; }
-                }
+
+        // Extraer la parte del monto: buscar "$" y tomar todo despues
+        // Si no hay "$", buscar el ultimo numero con punto decimal
+        String amountStr = text;
+        int dollarIdx = amountStr.lastIndexOf('$');
+        if (dollarIdx >= 0) {
+            amountStr = amountStr.substring(dollarIdx + 1);
+        }
+
+        // Limpiar: espacios, comas, signos
+        amountStr = amountStr
+                .replaceAll("[^0-9.]", "")
+                .replace(",", "")
+                .trim();
+
+        // Si hay multiples puntos (ej: "1.500.000.00"), interpretar
+        // los primeros como separadores de miles y el ultimo como decimal
+        if (amountStr.contains(".")) {
+            int lastDot = amountStr.lastIndexOf('.');
+            String decimal = amountStr.substring(lastDot);
+            if (decimal.length() <= 3) {
+                String integer = amountStr.substring(0, lastDot).replace(".", "");
+                amountStr = integer + decimal;
             }
+        }
+
+        try {
+            return Double.parseDouble(amountStr);
+        } catch (NumberFormatException e) {
             return 0;
         }
     }
 
     /**
-     * Obtiene el texto del saldo (para OCR o logs).
+     * Obtiene el texto del saldo total ("$2455450.00").
      */
     public String getConsolidatedBalanceText() {
-        WebElement element = WaitUtils.waitForVisibility(balanceForOCR);
-        return element.getText();
-    }
-
-    /**
-     * Verifica si el saldo coincide con el esperado.
-     */
-    public boolean isBalanceCorrect(double expectedBalance) {
-        double actual = getConsolidatedBalanceByOCR();
-        return Math.abs(actual - expectedBalance) < 1.0;
+        return WaitUtils.waitForVisibility(balanceForOCR).getText();
     }
 
     /**
@@ -235,6 +244,19 @@ public class HomePage {
      */
     public WebElement getAccountInfoElement() {
         return WaitUtils.waitForVisibility(accountInfoLine);
+    }
+
+    /**
+     * Lee el saldo individual de la cuenta activa y lo convierte a double.
+     *
+     * La linea de cuenta tiene el formato: "**** 4821 · $1500000.00"
+     * Se extrae solo la parte del monto y se parsea a double.
+     *
+     * @return saldo de la cuenta activa como double (ej: 1500000.00)
+     */
+    public double getAccountBalanceAsAmount() {
+        String info = getAccountInfoText();
+        return parseAmount(info);
     }
 
     /**

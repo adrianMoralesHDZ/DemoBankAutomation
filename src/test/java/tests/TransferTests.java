@@ -199,9 +199,9 @@ public void testTransferenciaExitosa() {
                 "El saldo debe haber DESCONTADO despues de transferir. Antes=$" + saldoAntes + ", Despues=$" + saldoDespues);
     }
 
-    @Step("OCR: {0}")
+    @Step("Leer saldo: {0}")
     private double stepReadBalanceOCR(String description) {
-        return homePage.getConsolidatedBalanceByOCR();
+        return homePage.getConsolidatedBalanceTextAsAmount();
     }
 
     /**

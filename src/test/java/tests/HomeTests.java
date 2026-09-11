@@ -11,38 +11,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-/*
- * ============================================================================
- * MODULO 2: HOME (4 casos - requisito del PDF)
- * ============================================================================
- *
- * ⚠️ JUSTIFICACIÓN DE USO DE OCR (requisito del PDF, sección 6, regla 1):
- * "El framework debe implementar Tess4J para leer texto o cifras monetarias
- *  en al menos tres (3) validaciones donde los localizadores nativos no
- *  sean confiables. El candidato debera justificar tecnicamente en el
- *  reporte por qué recurrió al OCR en cada caso especifico."
- *
- * En este modulo se usan OCRs en los siguientes casos:
- *
- *   OCR #1: SALDO CONSOLIDADO (testSaldoConsolidadoPorOCR)
- *   - JUSTIFICACIÓN: El saldo está renderizado sobre una tarjeta con
- *     GRADIENTE (efecto visual especial). Aunque el TextView expone
- *     el texto "$2455450.00", el framework está diseñado para validar
- *     el valor INDEPENDIENTEMENTE del localizador (como si NO tuviera
- *     testID), usando Tess4J para leer el componente con la tarjeta
- *     de gradiente. Esto simula el caso real del enunciado del PDF
- *     donde el saldo seria un componente grafico sin accesibilidad
- *     confiable.
- *
- *   OCR #2: SALDO CUENTA CORRIENTE (testSaldoIndividualPorOCR_TransferirACuentaCorriente)
- *   - JUSTIFICACIÓN: Validamos con OCR el saldo "$1500000.00" que aparece
- *     en la pestaña de Cuenta Corriente. Este monto es DINAMICO (cambia
- *     despues de transferencias), entonces aunque tiene text, OCR asegura
- *     validacion visual robusta contra cambios de formato o fuente.
- *
- * Resultado: 2 OCRs justificados en este modulo (de los 3 minimos del PDF).
- * ============================================================================
- */
+
 public class HomeTests {
 
     private HomePage homePage;
@@ -61,91 +30,92 @@ public class HomeTests {
         DriverFactory.quitDriver();
     }
 
-    // ========================================================================
-    // OCR #1: SALDO CONSOLIDADO
-    // ========================================================================
+// ========================================================================
+// CASO 1: SALDO CONSOLIDADO
+// ========================================================================
+
     /**
-     * CASO 1: Consistencia del saldo consolidado via OCR.
-     *
-     * ⚠️ JUSTIFICACIÓN TÉCNICA DEL OCR:
-     * El saldo consolidado esta renderizado sobre una tarjeta con
-     * gradiente (efecto visual decorativo azul en DemoBank). Aunque
-     * el componente expone el texto en pantalla, el PDF exige
-     * que validemos el monto INDEPENDIENTEMENTE del localizador,
-     * usando OCR (Tess4J) para confirmar el valor exacto.
-     *
-     * El saldo esperado es: 1.500.000 (Corriente) + 955.450 (Ahorros) = 2.455.450
+     * CASO 1: Consistencia del saldo consolidado.
+     * <p>
+     * Valida que el saldo total mostrado en Home sea igual a la suma de los
+     * saldos individuales de Cuenta Corriente + Cuenta Ahorros.
+     * <p>
+     * Flujo:
+     * 1. Leer saldo consolidado de la pantalla Home
+     * 2. Tap tab Cuenta Corriente → leer saldo individual
+     * 3. Tap tab Cuenta Ahorros → leer saldo individual
+     * 4. Sumar ambos saldos
+     * 5. Assert: suma de saldos individuales == saldo consolidado
+     * <p>
+     * Todos los valores se obtienen de la app en tiempo de ejecucion.
      */
-    @Test(priority = 1, groups = {"home", "ocr"})
-    @Description("OCR #1: Validar saldo consolidado via Tesseract. Justificacion: "
-            + "el saldo esta en una tarjeta con gradiente, "
-            + "componente grafico sin accesibilidad confiable (requisito PDF).")
+    @Test(priority = 1, groups = {"home"})
+    @Description("Validar saldo consolidado: saldo Cuenta Corriente + saldo Cuenta Ahorros "
+            + "= saldo total mostrado en Home.")
     @Severity(SeverityLevel.CRITICAL)
-    public void testSaldoConsolidadoPorOCR() {
-        TestListener.captureAndAttachScreenshot("OCR #1 - Pantalla Home antes de leer");
+    public void testSaldoConsolidado() {
+        TestListener.captureAndAttachScreenshot("Home - Pantalla inicial");
 
-        // Leer el saldo con OCR
-        double saldoOCR = readConsolidatedBalanceOCR();
+        // 1. Leer saldo consolidado del Home
+        double saldoConsolidado = homePage.getConsolidatedBalanceTextAsAmount();
+        TestListener.captureAndAttachScreenshot(
+                "Saldo consolidado: $" + String.format("%.2f", saldoConsolidado));
 
-        // Lo que debe ser: 1.500.000 + 955.450 = 2.455.450
-        double saldoEsperado = TestDataProvider.SALDO_CORRIENTE + TestDataProvider.SALDO_AHORROS;
-
-        // VALIDACIÓN PRINCIPAL: el OCR debe leer el valor esperado
-        Assert.assertEquals(saldoOCR, saldoEsperado, 0.01,
-                "OCR #1 FALLO: leyo $" + saldoOCR + " pero se esperaba $" + saldoEsperado);
-
-        TestListener.captureAndAttachScreenshot("OCR #1 - Saldo validado: $" + saldoOCR);
-    }
-
-    @Step("OCR lee saldo consolidado de la tarjeta con gradiente")
-    private double readConsolidatedBalanceOCR() {
-        return homePage.getConsolidatedBalanceByOCR();
-    }
-
-    // ========================================================================
-    // OCR #2: SALDO CUENTA CORRIENTE
-    // ========================================================================
-    /**
-     * CASO 2: Saldo individual de Cuenta Corriente via OCR.
-     *
-     * ⚠️ JUSTIFICACIÓN TÉCNICA DEL OCR:
-     * El saldo de cada cuenta individual se renderiza sobre un TEXTVIEW
-     * DINAMICO que cambia despues de cada operacion. Aunque tiene
-     * resource-id, el framework usa OCR para validar el monto visualmente
-     * y asegurar que no hay cambios de formato no controlados.
-     *
-     * El saldo esperado aquí es $1.500.000.00 (Cuenta Corriente).
-     */
-    @Test(priority = 2, groups = {"home", "ocr"})
-    @Description("OCR #2: Saldo de Cuenta Corriente individual via Tesseract. "
-            + "Justificacion: monto dinamico que cambia con cada operacion, "
-            + "OCR asegura validacion visual robusta.")
-    @Severity(SeverityLevel.NORMAL)
-    public void testSaldoCuentaCorrientePorOCR() {
-        TestListener.captureAndAttachScreenshot("OCR #2 - Home (en tab por defecto)");
-
-        // Tap en tab Cuenta Corriente
+        // 2. Tap Cuenta Corriente y leer su saldo
         homePage.tapCurrentAccountTab();
-        TestListener.captureAndAttachScreenshot("OCR #2 - Tab Cuenta Corriente activa");
+        double saldoCorriente = homePage.getAccountBalanceAsAmount();
+        TestListener.captureAndAttachScreenshot(
+                "Cuenta Corriente: $" + String.format("%.2f", saldoCorriente));
 
-        // Leer saldo con OCR (simulando lectura desde la línea '**** 4821 · $1500000.00')
-        String accountInfo = readAccountInfoOCR();
+        // 3. Tap Cuenta Ahorros y leer su saldo
+        homePage.tapSavingsAccountTab();
+        double saldoAhorros = homePage.getAccountBalanceAsAmount();
+        TestListener.captureAndAttachScreenshot(
+                "Cuenta Ahorros: $" + String.format("%.2f", saldoAhorros));
 
-        // Validar que aparece el monto esperado
-        Assert.assertTrue(accountInfo.contains("1500000") || accountInfo.contains("1.500.000"),
-                "OCR #2 FALLO: deberia contener '$1.500.000' pero leyo: '" + accountInfo + "'");
+        // 4. Sumar los saldos individuales
+        double sumaEsperada = saldoCorriente + saldoAhorros;
+
+        // 5. Validar: la suma debe ser igual al saldo consolidado
+        Assert.assertEquals(saldoConsolidado, sumaEsperada, 0.00,
+                "Saldo consolidado incorrecto: $" + String.format("%.2f", saldoConsolidado)
+                        + " != Cuenta Corriente ($" + String.format("%.2f", saldoCorriente)
+                        + ") + Cuenta Ahorros ($" + String.format("%.2f", saldoAhorros)
+                        + ") = $" + String.format("%.2f", sumaEsperada));
     }
 
-    @Step("OCR lee informacion de cuenta: '**** XXXX · $XXXXXX'")
-    private String readAccountInfoOCR() {
-        // Lectura directa del texto
-        org.openqa.selenium.WebElement element = homePage.getAccountInfoElement();
-        return element.getText();
+// ========================================================================
+// CASO 2: SALDO CUENTA CORRIENTE
+// ========================================================================
+
+    /**
+     * CASO 2: Saldo individual de Cuenta Corriente.
+     * <p>
+     * Valida que la linea de cuenta muestre el saldo de Cuenta Corriente
+     * ($1.500.000.00). El texto es un TextView con @text accesible, se lee
+     * con getText() directo. No requiere OCR.
+     */
+    @Test(priority = 2, groups = {"home"})
+    @Description("Validar saldo de Cuenta Corriente: $1.500.000. "
+            + "Localizador nativo confiable (TextView con @text).")
+    @Severity(SeverityLevel.NORMAL)
+    public void testSaldoCuentaCorriente() {
+        TestListener.captureAndAttachScreenshot("Home (tab por defecto)");
+
+        homePage.tapCurrentAccountTab();
+        TestListener.captureAndAttachScreenshot("Tab Cuenta Corriente activa");
+
+        String accountInfo = homePage.getAccountInfoText();
+
+        Assert.assertTrue(accountInfo.contains("1500000") || accountInfo.contains("1.500.000"),
+                "Saldo de Cuenta Corriente incorrecto: deberia contener '$1.500.000' "
+                        + "pero leyo: '" + accountInfo + "'");
     }
 
     // ========================================================================
     // CASO 3: INTERACTIVIDAD DE CUENTAS
     // ========================================================================
+
     /**
      * CASO 3: Cambio entre tabs Corriente y Ahorros.
      */
@@ -163,6 +133,7 @@ public class HomeTests {
     // ========================================================================
     // CASO 4: ACCESOS RAPIDOS
     // ========================================================================
+
     /**
      * CASO 4: Boton Transferir abre modal de TransferPage.
      */
@@ -201,6 +172,7 @@ public class HomeTests {
     // ========================================================================
     // CASO 5: LOGOUT SEGURO
     // ========================================================================
+
     /**
      * CASO 5: Logout cierra sesion y vuelve a Login.
      */

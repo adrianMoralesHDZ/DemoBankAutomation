@@ -12,15 +12,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-/*
- * ============================================================================
- * MODULO 1: LOGIN (4 casos - requisito del PDF)
- * ============================================================================
- *
- * Cada accion importante tiene una captura con descripcion clara para
- * trazabilidad en el reporte de Allure.
- * ============================================================================
- */
 public class LoginTests {
 
     private LoginPage loginPage;

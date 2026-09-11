@@ -65,26 +65,36 @@ public class MovementsTests {
      * CASO 2: Filtro Ingresos muestra solo montos positivos.
      */
     @Test(priority = 2, groups = {"movements", "filter"})
-    @Description("Filtro Ingresos solo muestra montos positivos")
+    @Description("Filtro Ingresos solo muestra montos positivos (+)")
     @Severity(SeverityLevel.CRITICAL)
     public void testFiltroIngresos() {
         movementsPage.tapIncomeFilter();
-        TestListener.captureAndAttachScreenshot("Filtro Ingresos aplicado");
         Assert.assertTrue(movementsPage.hasMovements(),
                 "Filtro ingresos debe mostrar movimientos");
+        TestListener.captureAndAttachScreenshot("Filtro Ingresos aplicado");
+
+        // Validar que TODOS los montos visibles empiecen con "+"
+        Assert.assertTrue(movementsPage.allAmountsArePositive(),
+                "Todos los montos con filtro Ingresos deben empezar con '+'. "
+                + "Montos encontrados: " + movementsPage.getAllMovementAmounts().size());
     }
 
     /**
      * CASO 3: Filtro Gastos muestra solo montos negativos.
      */
     @Test(priority = 3, groups = {"movements", "filter"})
-    @Description("Filtro Gastos solo muestra montos negativos")
+    @Description("Filtro Gastos solo muestra montos negativos (-)")
     @Severity(SeverityLevel.CRITICAL)
     public void testFiltroGastos() {
         movementsPage.tapExpenseFilter();
-        TestListener.captureAndAttachScreenshot("Filtro Gastos aplicado");
         Assert.assertTrue(movementsPage.hasMovements(),
                 "Filtro gastos debe mostrar movimientos");
+        TestListener.captureAndAttachScreenshot("Filtro Gastos aplicado");
+
+        // Validar que TODOS los montos visibles empiecen con "-"
+        Assert.assertTrue(movementsPage.allAmountsAreNegative(),
+                "Todos los montos con filtro Gastos deben empezar con '-'. "
+                + "Montos encontrados: " + movementsPage.getAllMovementAmounts().size());
     }
 
     /**

@@ -78,7 +78,8 @@ public class MovementsPage {
     // Empty state (cuando no hay resultados).
     // Segun dump: buscar texto que indique sin resultados.
     private final By emptyState =
-            By.xpath("//*[contains(@text,'Sin resultados') or contains(@text,'sin resultados')]");
+            By.xpath("//*[contains(@text,'No hay movimientos que coincidan')]");
+
 
     // Empty state texto
     private final By emptyStateText =
@@ -193,5 +194,49 @@ public class MovementsPage {
      */
     public List<WebElement> getAllMovementAmounts() {
         return driver.findElements(movementAmount);
+    }
+
+    /**
+     * Verifica que todos los montos visibles empiecen con "+" (ingresos).
+     *
+     * Recorre cada monto visible en pantalla y verifica que su texto
+     * comience con "+". Si encuentra alguno que no empieza con "+",
+     * retorna false.
+     *
+     * @return true si todos los montos empiezan con "+"
+     */
+    public boolean allAmountsArePositive() {
+        List<WebElement> amounts = getAllMovementAmounts();
+        if (amounts.isEmpty()) {
+            return false;
+        }
+        for (WebElement amount : amounts) {
+            String text = amount.getText();
+            System.out.println("[VALIDACION] Monto: " + text);
+            if (text == null || !text.startsWith("+")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Verifica que todos los montos visibles empiecen con "-" (gastos).
+     *
+     * @return true si todos los montos empiezan con "-"
+     */
+    public boolean allAmountsAreNegative() {
+        List<WebElement> amounts = getAllMovementAmounts();
+        if (amounts.isEmpty()) {
+            return false;
+        }
+        for (WebElement amount : amounts) {
+            String text = amount.getText();
+            System.out.println("[VALIDACION] Monto: " + text);
+            if (text == null || !text.startsWith("-")) {
+                return false;
+            }
+        }
+        return true;
     }
 }

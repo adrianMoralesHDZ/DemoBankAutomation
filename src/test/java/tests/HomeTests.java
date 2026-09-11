@@ -93,7 +93,7 @@ public class HomeTests {
      * <p>
      * Valida que la linea de cuenta muestre el saldo de Cuenta Corriente
      * ($1.500.000.00). El texto es un TextView con @text accesible, se lee
-     * con getText() directo. No requiere OCR.
+     * con getText()
      */
     @Test(priority = 2, groups = {"home"})
     @Description("Validar saldo de Cuenta Corriente: $1.500.000. "
@@ -107,7 +107,7 @@ public class HomeTests {
 
         String accountInfo = homePage.getAccountInfoText();
 
-        Assert.assertTrue(accountInfo.contains("1500000") || accountInfo.contains("1.500.000"),
+        Assert.assertTrue(accountInfo.contains("1500000") || accountInfo.contains("1500000.00"),
                 "Saldo de Cuenta Corriente incorrecto: deberia contener '$1.500.000' "
                         + "pero leyo: '" + accountInfo + "'");
     }

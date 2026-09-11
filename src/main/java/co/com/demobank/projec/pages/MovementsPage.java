@@ -32,51 +32,57 @@ public class MovementsPage {
     // ⚠️ COMPLETAR con los IDs reales de DemoBank cuando tengas la APK
     // ========================================================================
 
-    // Campo de búsqueda (filtro de transacciones)
+    // Campo de búsqueda (filtro de transacciones).
+    // Segun dump real: TextView con texto "Buscar movimiento", sin resource-id.
     private final By searchField =
-            By.id("com.demobank.app:id/edit_search");
+            By.xpath("//*[contains(@text,'Buscar movimiento')]");
 
-    // Botón para limpiar búsqueda
+    // Botón para limpiar búsqueda (aparece cuando hay texto en el search).
+    // Segun dump: no tiene resource-id, buscar por content-desc o icono X.
     private final By clearSearchButton =
-            By.id("com.demobank.app:id/btn_clear_search");
+            By.xpath("//*[contains(@content-desc,'limpiar') or contains(@content-desc,'clear')]");
 
-    // Cada item de movimiento (se repite en lista)
-    // ⚠️ Lista dinámica - usa XPath porque no hay ID específico por item
+    // Cada item de movimiento (se repite en lista).
+    // Segun dump: los items son ViewGroup que contienen TextViews con
+   // titulo, categoria y monto. No hay resource-id, usar estructura.
     private final By movementItem =
-            By.xpath("//android.widget.LinearLayout[@resource-id='com.demobank.app:id/item_movement_container']");
+            By.xpath("//android.view.ViewGroup[.//android.widget.TextView[contains(@text,'jul') or contains(@text,'jun')]]");
 
-    // Título del movimiento (descripción, ej: "Transferencia a Juan")
+    // Título del movimiento (descripción, ej: "Transferencia a María López")
+    // Segun dump: es el primer TextView del item que no es fecha ni monto.
     private final By movementTitle =
-            By.id("com.demobank.app:id/txt_movement_title");
+            By.xpath("(//android.widget.TextView[contains(@text,'jul') or contains(@text,'jun')])[1]/preceding::android.widget.TextView[1]");
 
     // Monto del movimiento (puede ser "+$500.000" ingresos o "-$200.000" gastos)
-    // ⚠️ Justificación OCR: el monto es un componente con formato custom
+    // Segun dump: TextView que contiene "$" en el lado derecho del item.
     private final By movementAmount =
-            By.xpath("//*[@resource-id='current amount']");
+            By.xpath("//android.widget.TextView[contains(@text,'$')]");
 
     // Categoría del movimiento (ej: "Servicios", "Transferencia")
+    // Segun dump: TextView debajo del titulo con "·" (ej: "Compras · 05 jul")
     private final By movementCategory =
-            By.id("com.demobank.app:id/txt_movement_category");
+            By.xpath("//android.widget.TextView[contains(@text,'·')]");
 
-    // Filtro "Ingresos"
+    // Filtro "Ingresos" (tab superior)
     private final By incomeFilter =
-            By.id("com.demobank.app:id/btn_filter_income");
+            By.xpath("//*[@text='Ingresos']");
 
-    // Filtro "Gastos"
+    // Filtro "Gastos" (tab superior)
     private final By expenseFilter =
-            By.id("com.demobank.app:id/btn_filter_expense");
+            By.xpath("//*[@text='Gastos']");
 
-    // Filtro "Todos"
+    // Filtro "Todos" (tab superior)
     private final By allFilter =
-            By.id("com.demobank.app:id/btn_filter_all");
+            By.xpath("//*[@text='Todos']");
 
-    // Empty state (cuando no hay resultados)
+    // Empty state (cuando no hay resultados).
+    // Segun dump: buscar texto que indique sin resultados.
     private final By emptyState =
-            By.id("com.demobank.app:id/empty_state_container");
+            By.xpath("//*[contains(@text,'Sin resultados') or contains(@text,'sin resultados')]");
 
     // Empty state texto
     private final By emptyStateText =
-            By.id("com.demobank.app:id/txt_empty_state");
+            By.xpath("//*[contains(@text,'Sin resultados') or contains(@text,'sin resultados')]");
 
     // ========================================================================
     // CONSTRUCTOR

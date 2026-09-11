@@ -6,6 +6,9 @@ import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /*
  * ============================================================================
  * PAGE OBJECT: HomePage (DemoBank)
@@ -62,26 +65,31 @@ public class HomePage {
     private final By accountInfoLine =
             By.xpath("//*[contains(@text,'****')]");
 
-    // Accesos rapidos (por content-desc)
+    // Accesos rapidos (segun dump real: los botones son TextView con @text,
+    // NO tienen content-desc. Se localizan por texto.)
     private final By quickTransfer =
-            By.xpath("//android.view.ViewGroup[contains(@content-desc,'Transferir')]");
+            By.xpath("//*[@text='Transferir']");
 
     private final By quickMovements =
-            By.xpath("//android.view.ViewGroup[contains(@content-desc,'Movimientos')]");
+            By.xpath("(//*[@text='Movimientos'])[1]");
 
     private final By quickPay =
-            By.xpath("//android.view.ViewGroup[contains(@content-desc,'Pagar')]");
+            By.xpath("//*[@text='Pagar']");
 
     private final By quickMore =
-            By.xpath("//android.view.ViewGroup[contains(@content-desc,'Más')]");
+            By.xpath("//*[@text='Más']");
 
     // Link "Ver todos" (movimientos)
     private final By viewAllMovements =
-            By.xpath("//android.view.ViewGroup[@content-desc='Ver todos']");
+            By.xpath("//*[@text='Ver todos']");
 
-    // Boton logout (icono arriba-derecha)
+    // Boton logout (icono arriba-derecha).
+    // Segun dump real: es un ViewGroup clickeable en [1051,44][1164,156],
+    // sin text ni content-desc. Es el primer ViewGroup clickeable de la
+    // pantalla (arriba a la derecha). No se puede usar @bounds en XPath
+    // porque UiAutomator2 no lo soporta de forma confiable.
     private final By logoutButton =
-            By.xpath("//android.view.ViewGroup[@bounds='[1051,44][1164,156]']");
+            By.xpath("(//android.view.ViewGroup[@clickable='true'])[1]");
 
     // Saludo "Hola, Demo"
     private final By userGreeting =
@@ -116,17 +124,6 @@ public class HomePage {
         WaitUtils.safeClick(quickPay);
     }
 
-    /**
-     * Toca el boton de logout (icono arriba-derecha).
-     */
-    public void logout() {
-        try {
-            WaitUtils.safeClick(logoutButton);
-            System.out.println("Tap en boton logout");
-        } catch (Exception e) {
-            System.out.println("No se pudo tap logout por bounds: " + e.getMessage());
-        }
-    }
 
     // ========================================================================
     // MÉTODOS DE ESTADO

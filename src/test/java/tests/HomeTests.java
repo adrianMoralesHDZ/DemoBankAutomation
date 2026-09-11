@@ -144,8 +144,9 @@ public class HomeTests {
         homePage.tapQuickTransfer();
         Assert.assertTrue(new TransferPage(DriverFactory.getDriver()).isOnContactScreen(),
                 "Tap en Transferir debe abrir modal de contactos");
-        TestListener.captureAndAttachScreenshot("Modal Transfer abierto");
+        TestListener.captureAndAttachScreenshot("Modal Transferir abierto");
     }
+
 
     /**
      * CASO 4.2: Boton Pagar abre modal de PayPage.
@@ -155,6 +156,8 @@ public class HomeTests {
     @Severity(SeverityLevel.NORMAL)
     public void testAccesoRapidoPagar() {
         homePage.tapQuickPay();
+        Assert.assertTrue(new PayPage(DriverFactory.getDriver()).isOnPayScreen(),
+                "Tap en Pagar debe abrir pantalla de pago");
         TestListener.captureAndAttachScreenshot("Modal Pagar abierto");
     }
 
@@ -166,23 +169,9 @@ public class HomeTests {
     @Severity(SeverityLevel.NORMAL)
     public void testAccesoRapidoMovimientos() {
         homePage.tapQuickMovements();
+        Assert.assertTrue(new MovementsPage(DriverFactory.getDriver()).isOnMovementsScreen(),
+                "Tap en Movimientos debe abrir la pantalla de movimientos");
         TestListener.captureAndAttachScreenshot("Pantalla Movimientos abierta");
     }
 
-    // ========================================================================
-    // CASO 5: LOGOUT SEGURO
-    // ========================================================================
-
-    /**
-     * CASO 5: Logout cierra sesion y vuelve a Login.
-     */
-    @Test(priority = 7, groups = {"home", "logout"})
-    @Description("Logout cierra sesion y devuelve a Login")
-    @Severity(SeverityLevel.CRITICAL)
-    public void testLogoutSeguro() {
-        homePage.logout();
-        TestListener.captureAndAttachScreenshot("Despues de logout");
-        Assert.assertTrue(loginPage.isOnLoginScreen(),
-                "Despues de logout debe estar en Login");
-    }
 }

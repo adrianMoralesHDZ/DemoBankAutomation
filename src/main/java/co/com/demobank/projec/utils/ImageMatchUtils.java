@@ -4,6 +4,8 @@ import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.Point;
+import org.bytedeco.opencv.opencv_core.Rect;
 
 import static org.bytedeco.opencv.global.opencv_core.CV_32F;
 
@@ -155,5 +157,79 @@ public class ImageMatchUtils {
     // ========================================================================
     public static boolean isMatch(double score) {
         return score >= MATCH_THRESHOLD;
+    }
+
+    // ========================================================================
+    // MÉTODO: findIconOnScreen — TEMPLATE MATCHING
+    // ========================================================================
+    // Busca un icono (template) dentro de un screenshot completo y devuelve
+    // las coordenadas (x, y) del centro donde se encontro el mejor match.
+    //
+    // USO:
+    //   File screenshot = driver.getScreenshotAs(OutputType.FILE);
+    //   int[] coords = ImageMatchUtils.findIconOnScreen(
+    //       screenshot.getAbsolutePath(),
+    //       "src/test/resources/baselines/logout_icon.png");
+    //   if (coords != null) {
+    //       // coords[0] = x, coords[1] = y
+    //       driver.executeScript("mobile: clickGesture",
+    //           Map.of("x", coords[0], "y", coords[1]));
+    //   }
+    //
+    // ALGORITMO:
+    //   1. Carga el screenshot completo y el icono baseline
+    //   2. Convierte ambos a escala de grises
+    //   3. Aplica matchTemplate (TM_CCOEFF_NORMED)
+    //   4. Busca el punto con mayor score
+    //   5. Devuelve el centro del area matcheada
+    //
+    // RETORNO:
+    //   int[2] = {x, y} del centro del icono encontrado, o null si no hay match
+    // ========================================================================
+    public static int[] findIconOnScreen(String screenPath, String templatePath) {
+        // 1. Cargar imagenes
+        Mat screen = opencv_imgcodecs.imread(screenPath);
+        Mat template = opencv_imgcodecs.imread(templatePath);
+
+        if (screen.empty()) {
+            throw new RuntimeException("Screenshot no encontrado: " + screenPath);
+        }
+        if (template.empty()) {
+            throw new RuntimeException("Template (icono baseline) no encontrado: " + templatePath);
+        }
+
+        // 2. Convertir a escala de grises (mejora el matching)
+        Mat screenGray = new Mat();
+        Mat templateGray = new Mat();
+        opencv_imgproc.cvtColor(screen, screenGray, opencv_imgproc.COLOR_BGR2GRAY);
+        opencv_imgproc.cvtColor(template, templateGray, opencv_imgproc.COLOR_BGR2GRAY);
+
+        // 3. Template matching
+        Mat result = new Mat();
+        opencv_imgproc.matchTemplate(screenGray, templateGray, result,
+                opencv_imgproc.TM_CCOEFF_NORMED);
+
+        // 4. Encontrar el mejor match
+        Point minLoc = new Point();
+        Point maxLoc = new Point();
+        double[] minVal = new double[1];
+        double[] maxVal = new double[1];
+        opencv_core.minMaxLoc(result, minVal, maxVal, minLoc, maxLoc, new Mat());
+
+        double score = maxVal[0];
+        System.out.println("[OpenCV] Template matching score: " + score);
+
+        // 5. Umbral: 0.8 (80%) para considerar que el icono fue encontrado
+        if (score < 0.8) {
+            System.out.println("[OpenCV] No se encontro el icono (score < 0.8)");
+            return null;
+        }
+
+        // 6. Calcular el centro del area matcheada
+        int centerX = maxLoc.x() + template.cols() / 2;
+        int centerY = maxLoc.y() + template.rows() / 2;
+        System.out.println("[OpenCV] Icono encontrado en centro: (" + centerX + ", " + centerY + ")");
+
+        return new int[] { centerX, centerY };
     }
 }

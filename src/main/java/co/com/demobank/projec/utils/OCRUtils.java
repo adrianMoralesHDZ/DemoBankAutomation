@@ -148,6 +148,35 @@ public class OCRUtils {
     }
 
     // ========================================================================
+    // MÉTODO: extractFullTextFromScreen (sin whitelist de números)
+    // ========================================================================
+    // Lee TODO el texto de la pantalla SIN restricción de caracteres.
+    // Permite leer palabras como "Bienvenido", "Iniciar sesión", etc.
+    //
+    // NECESARIO porque el OCR configurado por defecto tiene whitelist
+    // de solo números y símbolos monetarios. Este método crea una
+    // instancia temporal sin esa restricción.
+    //
+    // USO:
+    //   String texto = OCRUtils.extractFullTextFromScreen(driver);
+    //   if (texto.contains("Bienvenido")) { ... }
+    // ========================================================================
+    public static String extractFullTextFromScreen(AndroidDriver driver) {
+        try {
+            Tesseract ocr = new Tesseract();
+            ocr.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
+            ocr.setLanguage("spa");
+            // Sin whitelist: permite leer cualquier caracter
+            File image = driver.getScreenshotAs(OutputType.FILE);
+            String text = ocr.doOCR(image).trim();
+            System.out.println("[OCR Full] Texto de pantalla: \"" + text + "\"");
+            return text;
+        } catch (TesseractException e) {
+            throw new RuntimeException("Error OCR al procesar pantalla completa", e);
+        }
+    }
+
+    // ========================================================================
     // MÉTODO: extractCurrencyAmount — CONVIERTE TEXTO A NÚMERO
     // ========================================================================
     // Este es el método más usado en los tests.

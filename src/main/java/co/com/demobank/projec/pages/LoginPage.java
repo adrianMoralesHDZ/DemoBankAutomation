@@ -43,9 +43,14 @@ public class LoginPage {
     private final By loginButton =
             By.xpath("//android.view.ViewGroup[@content-desc='Iniciar sesión']");
 
-    // Toggle de contraseña (ojito) - identificado por desc
+    // Toggle de contraseña (ojito).
+    // Segun dump de UiAutomator: es un android.view.ViewGroup clickeable
+    // ubicado como sibling del campo password (2do EditText), dentro del
+    // mismo contenedor padre. NO tiene content-desc ni resource-id.
+    //
+    // XPath: del 2do EditText, buscar el siguiente ViewGroup clickeable.
     private final By passwordToggle =
-            By.xpath("//android.view.ViewGroup[contains(@content-desc,'contrase')]");
+            By.xpath("(//android.widget.EditText)[2]/following-sibling::android.view.ViewGroup[@clickable='true'][1]");
 
     // Logo "DemoBank"
     private final By loginLogo =
@@ -53,7 +58,7 @@ public class LoginPage {
 
     // Mensaje de error (busca el primer TextView con "Error" o similar)
     private final By errorMessage =
-            By.xpath("//*[contains(@text,'Error') or contains(@text,'inv') or contains(@text,'vaci')]");
+            By.xpath("//*[contains(@text,'Ingresa tu correo')]");
 
     // ========================================================================
     // CONSTRUCTOR

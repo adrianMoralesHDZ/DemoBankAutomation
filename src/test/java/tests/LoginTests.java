@@ -112,8 +112,7 @@ public class LoginTests {
         // 4. Verificar mensaje de error
         boolean errorShown = loginPage.isErrorMessageDisplayed();
         AllureHelper.screenshot("[PASO 3] Mensaje de error visible: " + errorShown);
-        Assert.assertTrue(errorShown,
-                "Debe mostrar error por email vacio");
+        Assert.assertTrue(errorShown, "Debe mostrar error por email vacio");
     }
 
     /**
@@ -154,5 +153,6 @@ public class LoginTests {
 
         loginPage.tapPasswordToggle();
         AllureHelper.screenshot("[PASO 3] Password oculto de nuevo despues de tap 2");
+
     }
 }

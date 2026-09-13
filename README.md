@@ -267,7 +267,7 @@ Descargar desde: https://github.com/appium/appium-inspector/releases
 ### Paso 1: Clonar el proyecto
 
 ```bash
-git clone <url-del-repo>
+git clone https://github.com/adrianMoralesHDZ/DemoBankAutomation
 cd DemoBankAutomation
 ```
 

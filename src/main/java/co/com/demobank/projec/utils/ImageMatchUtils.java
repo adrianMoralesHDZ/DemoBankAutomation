@@ -4,7 +4,6 @@ import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_core.Point;
 
 import static org.bytedeco.opencv.global.opencv_core.CV_32F;
 

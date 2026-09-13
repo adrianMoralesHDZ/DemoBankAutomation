@@ -143,6 +143,15 @@ public class LoginPage {
     }
 
     /**
+     * Devuelve el texto del mensaje de error visible.
+     *
+     * @return texto del mensaje de error
+     */
+    public String getErrorMessageText() {
+        return WaitUtils.waitForVisibility(errorMessage).getText();
+    }
+
+    /**
      * Verifica si la contrasena esta visible (texto plano) u oculta.
      *
      * @return true si la contrasena es visible

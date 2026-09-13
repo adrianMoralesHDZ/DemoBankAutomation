@@ -14,7 +14,7 @@ import java.io.ByteArrayInputStream;
  * Cada metodo produce texto estructurado que describe que se hizo,
  * que valor se envio, que valor devolvio la app y cual fue el resultado.
  * <p>
- * MODO DE CAPTURA DE SCREENSHOTS (configurable via propiedad del sistema):
+ * MODO DE CAPTURA DE SCREENSHOTS (configurable en config.properties):
  * <p>
  * Existen dos modos de captura:
  * <ul>
@@ -27,13 +27,15 @@ import java.io.ByteArrayInputStream;
  *       "capturas unicamente ante la ocurrencia de fallas".</li>
  * </ul>
  * <p>
- * Como cambiar entre modos:
+ * Como cambiar entre modos (en config.properties o via propiedad del sistema):
  * <pre>
  *   MODO FLUJO COMPLETO (por defecto):
+ *     allure.screenshots.everyStep=true   (en config.properties)
  *     mvn test
  *     mvn test -Dallure.screenshots.everyStep=true
  *
  *   MODO SOLO FALLOS:
+ *     allure.screenshots.everyStep=false  (en config.properties)
  *     mvn test -Dallure.screenshots.everyStep=false
  * </pre>
  */
@@ -46,14 +48,11 @@ public class AllureHelper {
     /**
      * Flag que controla si se captura screenshot en cada paso del flujo.
      * <p>
-     * Se lee de la propiedad del sistema {@code allure.screenshots.everyStep}.
-     * Valor por defecto: {@code true} (modo flujo completo).
-     * <p>
-     * Si se establece en {@code false}, los metodos report* NO capturan
-     * screenshots. Solo TestListener.onTestFailure captura en caso de error.
+     * Se lee desde {@code config.properties} via {@link ConfigReader}.
+     * El valor puede ser sobreescrito con la propiedad del sistema
+     * {@code -Dallure.screenshots.everyStep}.
      */
-    private static final boolean CAPTURE_EVERY_STEP = Boolean.parseBoolean(
-            System.getProperty("allure.screenshots.everyStep", "true"));
+    private static final boolean CAPTURE_EVERY_STEP = ConfigReader.captureEveryStep();
 
     // ========================================================================
     // SCREENSHOT BASE

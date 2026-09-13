@@ -3,20 +3,26 @@ package co.com.demobank.projec.utils;
 /**
  * Centraliza todos los datos de prueba del framework.
  * <p>
- * Evita el hardcodeo de valores en los metodos de test y permite
- * mantener los datos en un unico punto.
+ * Las credenciales se leen desde {@code config.properties} via
+ * {@link ConfigReader}. Los saldos mockeados, montos de prueba y
+ * textos de busqueda son constantes del framework.
  */
 public class TestDataProvider {
 
     // =========================================================================
-    // Credenciales
+    // Credenciales (leidas de config.properties)
     // =========================================================================
 
-    public static final String VALID_EMAIL    = "demo@demo.com";
-    public static final String VALID_PASSWORD = "1234";
+    public static String getValidEmail() {
+        return ConfigReader.getEmail();
+    }
+
+    public static String getValidPassword() {
+        return ConfigReader.getPassword();
+    }
 
     // =========================================================================
-    // Saldos mockeados de DemoBank
+    // Saldos mockeados de DemoBank (datos fijos de la app)
     // =========================================================================
 
     public static final double SALDO_CORRIENTE   = 1500000.00;

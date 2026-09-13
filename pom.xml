@@ -134,11 +134,11 @@
                         </property>
                     </properties>
                     <!--
-                        Propiedad del sistema para controlar el modo de captura de screenshots.
+                        Permite overridear el modo de captura desde linea de comandos.
+                        El valor por defecto esta en config.properties (allure.screenshots.everyStep=true).
 
                         MODO FLUJO COMPLETO (por defecto):
                             mvn test
-                            mvn test -Dallure.screenshots.everyStep=true
                             -> Captura screenshot en cada paso del flujo + en fallos
 
                         MODO SOLO FALLOS:

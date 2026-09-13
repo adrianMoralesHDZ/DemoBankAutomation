@@ -11,18 +11,14 @@ import java.time.Duration;
 /**
  * Factory centralizada para la creacion y gestion del AndroidDriver.
  * <p>
- * Configura las capabilities de UiAutomator2 para la app DemoBank
- * y proporciona acceso singleton al driver y al WebDriverWait.
+ * Las capabilities se leen desde {@code config.properties} via
+ * {@link ConfigReader}. Para cambiar el dispositivo, URL de Appium
+ * o datos de la app, edita {@code src/main/resources/config.properties}.
  */
 public class DriverFactory {
 
     private static AndroidDriver driver;
     private static WebDriverWait wait;
-
-    private static final String SERVER_URL = "http://127.0.0.1:4723/";
-    private static final String DEVICE_NAME = "ZY22KVZPQ4";
-    private static final String APP_PACKAGE = "com.demobank.app";
-    private static final String APP_ACTIVITY = "com.demobank.app.MainActivity";
 
     /**
      * Obtiene la instancia singleton del driver. Si no existe, la crea.
@@ -48,26 +44,27 @@ public class DriverFactory {
     }
 
     /**
-     * Crea el AndroidDriver con las capabilities de DemoBank.
+     * Crea el AndroidDriver con las capabilities leidas de config.properties.
      *
      * @return nueva instancia de AndroidDriver
      */
     private static AndroidDriver createDriver() {
         UiAutomator2Options options = new UiAutomator2Options()
-                .setDeviceName(DEVICE_NAME)
+                .setDeviceName(ConfigReader.getDeviceName())
                 .setAutomationName("UiAutomator2")
-                .setAppPackage(APP_PACKAGE)
-                .setAppActivity(APP_ACTIVITY)
+                .setAppPackage(ConfigReader.getAppPackage())
+                .setAppActivity(ConfigReader.getAppActivity())
                 .setNoReset(false)
-                .setAppWaitActivity(APP_ACTIVITY)
-                .setAppWaitPackage(APP_PACKAGE)
+                .setAppWaitActivity(ConfigReader.getAppActivity())
+                .setAppWaitPackage(ConfigReader.getAppPackage())
                 .setAppWaitDuration(Duration.ofSeconds(30))
                 .autoGrantPermissions();
 
         try {
-            return new AndroidDriver(new URL(SERVER_URL), options);
+            return new AndroidDriver(new URL(ConfigReader.getAppiumServerUrl()), options);
         } catch (MalformedURLException e) {
-            throw new RuntimeException("URL Appium invalida: " + SERVER_URL, e);
+            throw new RuntimeException("URL Appium invalida: "
+                    + ConfigReader.getAppiumServerUrl(), e);
         }
     }
 

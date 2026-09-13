@@ -36,7 +36,7 @@ public class PayTests {
         DriverFactory.getDriver();
         loginPage = new LoginPage(DriverFactory.getDriver());
         homePage = new HomePage(DriverFactory.getDriver());
-        loginPage.loginAs(TestDataProvider.VALID_EMAIL, TestDataProvider.VALID_PASSWORD);
+        loginPage.loginAs(TestDataProvider.getValidEmail(), TestDataProvider.getValidPassword());
         homePage.tapQuickPay();
         payPage = new PayPage(DriverFactory.getDriver());
     }

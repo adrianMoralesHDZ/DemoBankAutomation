@@ -15,17 +15,15 @@ import java.io.File;
  * confiables (componentes graficos, tarjetas con gradiente, fuentes
  * personalizadas, etc.).
  * <p>
- * Requisito: Tesseract OCR instalado en C:\Program Files\Tesseract-OCR\
+ * La ruta de tessdata y el idioma se configuran en {@code config.properties}.
  */
 public class OCRUtils {
-
-    private static final String TESSDATA_PATH = "C:\\Program Files\\Tesseract-OCR\\tessdata";
 
     private static final Tesseract tesseract = new Tesseract();
 
     static {
-        tesseract.setDatapath(TESSDATA_PATH);
-        tesseract.setLanguage("spa");
+        tesseract.setDatapath(ConfigReader.getTessdataPath());
+        tesseract.setLanguage(ConfigReader.getTessLanguage());
         tesseract.setTessVariable("tessedit_char_whitelist", "0123456789$,. ");
     }
 
@@ -71,8 +69,8 @@ public class OCRUtils {
     public static String extractFullTextFromScreen(AndroidDriver driver) {
         try {
             Tesseract ocr = new Tesseract();
-            ocr.setDatapath(TESSDATA_PATH);
-            ocr.setLanguage("spa");
+            ocr.setDatapath(ConfigReader.getTessdataPath());
+            ocr.setLanguage(ConfigReader.getTessLanguage());
             File image = driver.getScreenshotAs(OutputType.FILE);
             String text = ocr.doOCR(image).trim();
             System.out.println("[OCR Full] Texto de pantalla: \"" + text + "\"");

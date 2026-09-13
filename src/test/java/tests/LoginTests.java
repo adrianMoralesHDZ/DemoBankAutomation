@@ -46,8 +46,8 @@ public class LoginTests {
     @Severity(SeverityLevel.CRITICAL)
     public void testLoginExitoso() {
         stepVerifyOnLoginScreen();
-        stepTypeEmail(TestDataProvider.VALID_EMAIL);
-        stepTypePassword(TestDataProvider.VALID_PASSWORD);
+        stepTypeEmail(TestDataProvider.getValidEmail());
+        stepTypePassword(TestDataProvider.getValidPassword());
         stepTapLogin();
         stepVerifyOnHome();
     }
@@ -128,10 +128,10 @@ public class LoginTests {
 
     @Step("Escribir password valido '{0}'")
     private void stepTypePasswordValid() {
-        loginPage.typePassword(TestDataProvider.VALID_PASSWORD);
+        loginPage.typePassword(TestDataProvider.getValidPassword());
         AllureHelper.reportAction(
                 "Escribir", "Campo de password",
-                TestDataProvider.VALID_PASSWORD + " (oculto)",
+                TestDataProvider.getValidPassword() + " (oculto)",
                 "Password escrito correctamente");
     }
 
@@ -176,10 +176,10 @@ public class LoginTests {
 
     @Step("Escribir email valido '{0}'")
     private void stepTypeEmailValid() {
-        loginPage.typeEmail(TestDataProvider.VALID_EMAIL);
+        loginPage.typeEmail(TestDataProvider.getValidEmail());
         AllureHelper.reportAction(
                 "Escribir", "Campo de email",
-                TestDataProvider.VALID_EMAIL, "Email escrito correctamente");
+                TestDataProvider.getValidEmail(), "Email escrito correctamente");
     }
 
     @Step("Limpiar campo de password para dejarlo vacio")

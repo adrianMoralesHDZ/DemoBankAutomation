@@ -51,6 +51,7 @@ DemoBankAutomation/
 │   │   │   ├── PayPage.java               # Modal de pago de servicios (3 pasos)
 │   │   │   └── PaySuccessPage.java         # Pantalla de exito pago
 │   │   └── utils/                          # Utilidades
+│   │       ├── ConfigReader.java            # Lector de config.properties
 │   │       ├── DriverFactory.java           # Crea y gestiona el driver
 │   │       ├── WaitUtils.java               # Esperas explicitas (sin Thread.sleep)
 │   │       ├── OCRUtils.java                # Tesseract OCR (lectura de texto)
@@ -69,6 +70,8 @@ DemoBankAutomation/
 │       └── resources/
 │           ├── testng.xml                    # Configuracion de la suite
 │           └── baselines/                    # Imagenes base para OpenCV
+├── src/main/resources/
+│   └── config.properties                     # Configuracion del entorno
 └── pom.xml                                  # Dependencias Maven
 ```
 
@@ -230,13 +233,15 @@ mvn clean install -DskipTests
 adb install DemoBank.apk
 ```
 
-### Paso 5: Configurar DriverFactory
+### Paso 5: Configurar el dispositivo
 
-Editar `DriverFactory.java` con el ID de tu dispositivo:
+Edita `src/main/resources/config.properties` con el ID de tu dispositivo:
 
-```java
-private static final String DEVICE_NAME = "TU_ID_AQUI";
+```properties
+device.name=TU_ID_AQUI
 ```
+
+Obtener el ID con: `adb devices`
 
 ### Paso 6: Iniciar Appium Server
 
@@ -250,19 +255,60 @@ Debes ver: `Appium REST http interface listener started on http://127.0.0.1:4723
 
 ## Configuracion
 
-### DriverFactory.java
+Toda la configuracion del entorno esta centralizada en un archivo `.properties`:
 
-```java
-private static final String SERVER_URL = "http://127.0.0.1:4723/";
-private static final String DEVICE_NAME = "ZY22KVZPQ4";
-private static final String APP_PACKAGE = "com.demobank.app";
-private static final String APP_ACTIVITY = "com.demobank.app.MainActivity";
+```
+src/main/resources/config.properties
 ```
 
-### OCRUtils.java
+Para ejecutar el framework en otro dispositivo o con otra configuracion, **solo edita este archivo** sin tocar codigo Java.
 
-```java
-tesseract.setDatapath("C:\\Program Files\\Tesseract-OCR\\tessdata");
+### Propiedades disponibles
+
+```properties
+# Appium Server
+appium.server.url=http://127.0.0.1:4723/
+
+# Dispositivo / Emulador (obtener ID con: adb devices)
+device.name=ZY22KVZPQ4
+
+# App DemoBank
+app.package=com.demobank.app
+app.activity=com.demobank.app.MainActivity
+
+# Credenciales de DemoBank
+credentials.email=demo@demo.com
+credentials.password=1234
+
+# Tesseract OCR
+tesseract.datapath=C:\\Program Files\\Tesseract-OCR\\tessdata
+tesseract.language=spa
+
+# Reportes Allure - modo de captura de screenshots
+# true  = capturar en cada paso (flujo completo)
+# false = capturar solo en fallos
+allure.screenshots.everyStep=true
+```
+
+### Como funciona
+
+```
+config.properties
+       ↓
+  ConfigReader.java  (lee el .properties una sola vez)
+       ↓
+  DriverFactory      (URL Appium, dispositivo, app package/activity)
+  TestDataProvider   (credenciales, saldos)
+  OCRUtils           (ruta tessdata, idioma)
+  AllureHelper       (modo de captura de screenshots)
+```
+
+Cualquier propiedad puede ser sobreescrita desde linea de comandos sin
+modificar el archivo:
+
+```bash
+mvn test -Ddevice.name=emulator-5554
+mvn test -Dallure.screenshots.everyStep=false
 ```
 
 ---
@@ -427,11 +473,16 @@ Tests (con Asserts)  ->  Pages (con localizadores y acciones)  ->  App
 
 ### Datos Externalizados
 
-Todos los datos de prueba estan en `TestDataProvider.java`:
+Las credenciales se leen desde `config.properties`:
 
 ```java
-TestDataProvider.VALID_EMAIL            // "demo@demo.com"
-TestDataProvider.VALID_PASSWORD         // "1234"
+TestDataProvider.getValidEmail()        // "demo@demo.com" (de config.properties)
+TestDataProvider.getValidPassword()     // "1234"          (de config.properties)
+```
+
+Los saldos mockeados, montos de prueba y textos de busqueda son constantes del framework:
+
+```java
 TestDataProvider.SALDO_CORRIENTE        // 1500000.00
 TestDataProvider.SALDO_AHORROS          // 955450.00
 TestDataProvider.SALDO_CONSOLIDADO      // 2455450.00

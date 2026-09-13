@@ -43,7 +43,6 @@ DemoBankAutomation/
 ├── src/
 │   ├── main/java/co/com/demobank/projec/
 │   │   ├── pages/                          # Page Objects (POM)
-│   │   │   ├── SplashPage.java             # Pantalla Splash inicial
 │   │   │   ├── LoginPage.java              # Pantalla de Login
 │   │   │   ├── HomePage.java               # Home con saldos y accesos rapidos
 │   │   │   ├── MovementsPage.java          # Lista de movimientos
@@ -66,8 +65,7 @@ DemoBankAutomation/
 │       │   ├── TransferTests.java           # TC13-TC17: Transferencias
 │       │   ├── PayTests.java                # TC18-TC23: Pagos
 │       │   ├── OpenCVRegressionTest.java     # Regresion visual
-│       │   ├── TestListener.java             # Captura screenshots en fallos
-│       │   └── StepValidation.java           # Helper de pasos Allure
+│       │   └── TestListener.java             # Captura screenshots en fallos
 │       └── resources/
 │           ├── testng.xml                    # Configuracion de la suite
 │           └── baselines/                    # Imagenes base para OpenCV
@@ -307,31 +305,101 @@ Esto abre el navegador con un reporte HTML interactivo.
 - **Paso a paso detallado**: Cada test usa anotaciones `@Step` que muestran
   exactamente que se hizo en cada paso (seleccionar contacto, escribir monto,
   tap continuar, validar resultado, etc.).
-- **Screenshots automaticos en fallos**: Las capturas de pantalla se adjuntan
-  **unicamente** cuando un test falla (via `TestListener.onTestFailure`).
-  Los tests exitosos no generan capturas innecesarias.
+- **Narrativa estilo Serenity**: Cada paso reporta que accion se realizo,
+  sobre que elemento, que valor se envio, que valor devolvio la app y cual
+  fue el resultado (PASS/FAIL).
 - **Validaciones documentadas**: Cada asercion registra el valor actual vs
-  esperado y el resultado (PASS/FAIL) como texto adjunto.
+  esperado, el detalle del calculo y el resultado como texto adjunto.
 - **Detalles del error**: En caso de fallo, se adjunta el stack trace completo,
   el mensaje de excepcion y la duracion del test.
 - **Metadatos de trazabilidad**: Informacion de pagina, URL y timestamp.
+
+### Modos de captura de screenshots
+
+El framework soporta **dos modos** de captura de screenshots configurables
+mediante la propiedad del sistema `allure.screenshots.everyStep`:
+
+#### Modo 1: Flujo completo (por defecto)
+
+Captura un screenshot en **cada paso** del test, sin importar si pasa o falla.
+Genera un reporte visual paso a paso, similar a Serenity.
+
+```bash
+mvn test
+# o explicitamente:
+mvn test -Dallure.screenshots.everyStep=true
+```
+
+**Que se obtiene**: Cada `@Step` del reporte tiene su screenshot del estado
+de la app en ese momento. Si el test falla, se agrega un screenshot
+adicional del estado de error + stack trace.
+
+#### Modo 2: Solo fallos
+
+Captura screenshots **unicamente cuando un test falla**. Los tests que pasan
+no generan capturas, produciendo un reporte mas liviano. Cumple el requisito
+del PDF: *"capturas unicamente ante la ocurrencia de fallas"*.
+
+```bash
+mvn test -Dallure.screenshots.everyStep=false
+```
+
+**Que se obtiene**: Los tests exitosos solo tienen la narrativa textual
+(que se envio, que devolvio, resultado). Los tests fallidos tienen
+screenshot del error + stack trace + detalles del fallo.
+
+#### Comparacion de modos
+
+| Caracteristica | Flujo completo | Solo fallos |
+|---|---|---|
+| Screenshot en cada paso | SI | NO |
+| Screenshot en fallo | SI | SI |
+| Narrativa textual en cada paso | SI | SI |
+| Stack trace en fallo | SI | SI |
+| Comando | `mvn test` | `mvn test -Dallure.screenshots.everyStep=false` |
+| Tamaño del reporte | Mayor | Menor |
+| Cumple requisito PDF | - | SI |
 
 ### Estructura del reporte por test
 
 ```
 [TEST] testTransferenciaExitosa
+  │
   ├── @Step: Paso 1 - Seleccionar primer contacto (Maria Lopez)
+  │     ├── Detalle de la accion:
+  │     │     ACCION    : Seleccionar
+  │     │     ELEMENTO  : Primer contacto de la lista (Maria Lopez)
+  │     │     RESULTADO : Contacto seleccionado, pasando a pantalla de monto
+  │     └── Screenshot: Seleccionar - Primer contacto de la lista
+  │
   ├── @Step: Paso 2 - Ingresar monto: $100000 y tap Continuar
+  │     ├── Detalle de la accion:
+  │     │     ACCION    : Escribir
+  │     │     ELEMENTO  : Campo de monto (EditText)
+  │     │     VALOR ENVIADO: $100000
+  │     │     RESULTADO : Monto escrito, ocultando teclado
+  │     └── Screenshot: Escribir - Campo de monto (EditText)
+  │
   ├── @Step: Paso 3 - Confirmar transferencia
+  │     └── Screenshot: Tap - Boton 'Confirmar transferencia'
+  │
   ├── @Step: Paso 4 - Verificar pantalla de exito
-  │     ├── Validacion: Pantalla de exito = PASS
-  │     ├── Validacion: Titulo contiene 'exitosa' = PASS
-  │     ├── Validacion: Monto en pantalla = PASS
-  │     └── Validacion: Destinatario = PASS
+  │     ├── Validacion: Pantalla de exito visible
+  │     │     VALOR OBTENIDO: Pantalla de exito detectada
+  │     │     VALOR ESPERADO: Pantalla con titulo 'Transferencia exitosa'
+  │     │     RESULTADO     : PASS
+  │     ├── Validacion: Titulo de la pantalla de exito
+  │     │     VALOR OBTENIDO: 'Transferencia exitosa!'
+  │     │     VALOR ESPERADO: Debe contener 'exitosa'
+  │     │     RESULTADO     : PASS
+  │     └── Screenshot: Validacion: Pantalla de exito [PASS]
   │
   ├── [SI FALLA] Screenshot: FALLO - testTransferenciaExitosa
   └── [SI FALLA] Detalles del Fallo (stack trace, excepcion, duracion)
 ```
+
+> **Nota:** Los screenshots de cada paso solo aparecen en modo "flujo completo".
+> En modo "solo fallos", los pasos solo tienen la narrativa textual.
 
 ---
 
@@ -362,11 +430,11 @@ Tests (con Asserts)  ->  Pages (con localizadores y acciones)  ->  App
 Todos los datos de prueba estan en `TestDataProvider.java`:
 
 ```java
-TestDataProvider.VALID_EMAIL         // "demo@ao.com"
-TestDataProvider.VALID_PASSWORD      // "1234"
-TestDataProvider.SALDO_CORRIENTE     // 1500000.00
-TestDataProvider.SALDO_AHORROS       // 955450.00
-TestDataProvider.SALDO_CONSOLIDADO   // 2455450.00
+TestDataProvider.VALID_EMAIL            // "demo@demo.com"
+TestDataProvider.VALID_PASSWORD         // "1234"
+TestDataProvider.SALDO_CORRIENTE        // 1500000.00
+TestDataProvider.SALDO_AHORROS          // 955450.00
+TestDataProvider.SALDO_CONSOLIDADO      // 2455450.00
 TestDataProvider.MONTO_TRANSFER_VALIDO  // 100000.00
 TestDataProvider.BUSQUEDA_NO_EXISTE     // "xyzzz_no_existe_12345"
 ```

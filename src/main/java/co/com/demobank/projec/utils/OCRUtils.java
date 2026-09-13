@@ -90,35 +90,27 @@ public class OCRUtils {
      * @return valor numerico del monto
      */
     public static double extractCurrencyAmount(WebElement element) {
-        String text = extractTextFromElement(element)
-                .replace("$", "")
-                .replaceAll("\\s+", "")
-                .trim();
+        String text = extractTextFromElement(element).trim();
 
-        String normalized;
-        if (text.contains(",") && text.lastIndexOf(",") > text.lastIndexOf(".")) {
-            normalized = text.replace(".", "").replace(",", ".");
-        } else if (text.contains(".") && text.indexOf(".") == text.lastIndexOf(".")) {
-            int lastDot = text.lastIndexOf(".");
-            String afterDot = text.substring(lastDot + 1);
-            if (afterDot.length() <= 2) {
-                normalized = text;
-            } else {
-                normalized = text.replace(".", "");
-            }
-        } else {
-            normalized = text.replaceAll("[.,]", "");
+        int indicePeso = text.indexOf("$");
+
+        if (indicePeso != -1) {
+            text = text.substring(indicePeso + 1).trim();
         }
 
-        if (normalized.isEmpty() || !normalized.matches(".*[0-9].*")) {
+        text = text
+                .replaceAll("\\s+", "")
+                .replace(",", "");
+
+        if (text.isEmpty() || !text.matches(".*[0-9].*")) {
             return 0;
         }
 
         try {
-            return Double.parseDouble(normalized);
+            return Double.parseDouble(text);
         } catch (NumberFormatException e) {
-            throw new RuntimeException("No se pudo parsear el monto OCR: '" + text
-                    + "' (normalizado: '" + normalized + "')", e);
+            throw new RuntimeException(
+                    "No se pudo parsear el monto OCR: '" + text + "'", e);
         }
     }
 }

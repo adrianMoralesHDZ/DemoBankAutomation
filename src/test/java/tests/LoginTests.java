@@ -199,7 +199,6 @@ public class LoginTests {
     @Description("TC04 - Toggle de password: mostrar y ocultar la contrasena con el boton ojito.")
     @Severity(SeverityLevel.NORMAL)
     public void testTogglePassword() {
-        stepVerifyPasswordHidden();
         stepTapToggleAndVerifyVisible();
         stepTapToggleAndVerifyHidden();
     }

@@ -55,7 +55,7 @@ public class PayTests {
             + "Incluye validacion de monto precargado automaticamente.")
     @Severity(SeverityLevel.CRITICAL)
     public void testPagoServicioEnergia() {
-        stepSelectService("Energia");
+        stepSelectService("Energ");
         stepVerifyAmountPreloaded();
         stepContinueAndConfirm();
         stepVerifyPaySuccess("Energ");

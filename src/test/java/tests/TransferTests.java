@@ -13,6 +13,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.sql.SQLOutput;
 import java.util.List;
 
 /**
@@ -140,16 +141,15 @@ public class TransferTests {
                 montoOk,
                 "El monto en pantalla debe coincidir con el transferido");
         Assert.assertTrue(montoOk, "El monto debe ser $100,000. Leido: '" + montoEnPantalla + "'");
-
         String destinatario = successPage.getRecipientNameShown();
-        boolean destOk = destinatario.toLowerCase().contains("maria");
+        boolean destOk = destinatario.contains("María López");
         AllureHelper.reportValidation(
                 "Destinatario mostrado en pantalla de exito",
-                "Texto leido: '" + destinatario + "'",
+                "Texto leido: " + destinatario,
                 "Debe contener 'Maria'",
                 destOk,
                 "El destinatario debe coincidir con el contacto seleccionado");
-        Assert.assertTrue(destOk, "El destinatario debe ser Maria Lopez. Leido: '" + destinatario + "'");
+        Assert.assertTrue(destOk, "El destinatario debe ser María López. Leido: " + destinatario);
     }
 
     /**
@@ -307,6 +307,7 @@ public class TransferTests {
 
         double saldoConsolidadoAntes = stepReadConsolidatedBalanceBefore();
         double saldoCuentaAntes = stepReadCurrentAccountBalanceBefore();
+
         stepVerifyBalanceOCR(saldoCuentaAntes, "ANTES");
         stepExecuteTransfer(montoTest);
         double saldoConsolidadoDespues = stepReadConsolidatedBalanceAfter();
@@ -314,7 +315,7 @@ public class TransferTests {
         stepVerifyBalanceOCR(saldoCuentaDespues, "DESPUES");
 
         stepValidateConsolidatedDiscount(saldoConsolidadoAntes, saldoConsolidadoDespues, montoTest);
-        stepValidateAccountDiscount(saldoCuentaAntes, saldoCuentaDespues, montoTest);
+       stepValidateAccountDiscount(saldoCuentaAntes, saldoCuentaDespues, montoTest);
     }
 
     @Step("Volver al Home y leer saldo CONSOLIDADO antes de transferir")
@@ -421,7 +422,9 @@ public class TransferTests {
         WebElement balanceElement = transferPage.getSourceAccountBalanceElement();
 
         String ocrRawText = OCRUtils.extractTextFromElement(balanceElement);
+
         double ocrAmount = OCRUtils.extractCurrencyAmount(balanceElement);
+        System.out.println("OCR Amount: " + ocrAmount);
 
         boolean ocrMatch = Math.abs(ocrAmount - saldoEsperado) < 1.0;
 

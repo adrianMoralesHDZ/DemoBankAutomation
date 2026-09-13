@@ -263,23 +263,16 @@ public class LoginTests {
      *   1. Login con credenciales validas
      *   2. Verificar que estamos en Home
      *   3. Tap en boton de cerrar sesion
-     *   4. Verificar que regresamos a Login (OCR + localizador nativo)
-     *   5. Re-login para confirmar que la sesion se cerro correctamente
+     *   4. Verificar retorno a Login (localizador nativo + OCR)
      */
     @Test(priority = 5, groups = {"login", "logout"})
     @Description("TC05 - Cierre de sesion: desde Home, tap en icono de logout retorna a pantalla de Login.")
     @Severity(SeverityLevel.CRITICAL)
     public void testCierreSesion() {
-        // Precondicion: hacer login
         stepLoginPrecondition();
-        // Verificar que estamos en Home
         stepVerifyOnHomeForLogout();
-        // Tap en boton de cerrar sesion
         stepTapLogout();
-        // Verificar que regresamos a Login
         stepVerifyReturnedToLogin();
-        // Re-login para confirmar que la sesion se cerro
-        //stepReLoginAfterLogout();
     }
 
     @Step("Precondicion: hacer login con credenciales validas")
@@ -312,12 +305,29 @@ public class LoginTests {
                 null, "Tap realizado, esperando retorno a Login");
     }
 
+    /**
+     * Verifica el retorno a Login con doble estrategia de validacion.
+     * <p>
+     * Estrategia 1 - Localizador nativo: busca el texto "Bienvenido de nuevo"
+     * mediante XPath en el arbol de accesibilidad. Es la validacion primaria.
+     * <p>
+     * Estrategia 2 - OCR (Tesseract): lee el texto completo de la pantalla
+     * y busca "Bienvenido" o "Iniciar sesion". Se usa como validacion
+     * secundaria por dos motivos:
+     *   a) El icono de logout no tiene content-desc ni resource-id
+     *      localizables (es un emoji), por lo que el tap se hace por
+     *      coordenadas calculadas dinamicamente. Si el tap fallara por
+     *      un cambio de resolucion, el localizador nativo podria no
+     *      encontrarse. OCR garantiza una validacion independiente del
+     *      arbol de accesibilidad.
+     *   b) Cumple el requisito del PDF de implementar validaciones
+     *      mediante OCR cuando los selectores nativos pueden no ser
+     *      confiables (componentes con emojis sin content-id).
+     */
     @Step("Verificar que la app retorno a la pantalla de Login")
     private void stepVerifyReturnedToLogin() {
-        // 1. Validacion por localizador nativo
         boolean onLogin = loginPage.isOnLoginScreen();
 
-        // 2. Validacion por OCR: leer texto de la pantalla y buscar "Bienvenido"
         String ocrText = "";
         boolean ocrDetectedLogin = false;
         try {
@@ -337,22 +347,13 @@ public class LoginTests {
                         : "No se detecto pantalla de Login"),
                 "Pantalla de Login con 'Bienvenido de nuevo' y 'Iniciar sesion'",
                 returnedToLogin,
-                "Despues de cerrar sesion, la app debe mostrar la pantalla de Login");
+                "Justificacion OCR: el icono de logout no tiene content-desc ni "
+                        + "resource-id localizable (es un emoji), por lo que el tap "
+                        + "se hace por coordenadas. OCR valida el retorno a Login de "
+                        + "forma independiente al arbol de accesibilidad. Cumple "
+                        + "requisito del PDF de validaciones OCR cuando los "
+                        + "selectores nativos no son confiables.");
         Assert.assertTrue(returnedToLogin,
                 "Despues de logout debe estar en pantalla de Login");
-    }
-
-    @Step("Re-login para confirmar que la sesion se cerro completamente")
-    private void stepReLoginAfterLogout() {
-        loginPage.loginAs(TestDataProvider.getValidEmail(), TestDataProvider.getValidPassword());
-        boolean onHome = homePage.isOnHomeScreen();
-        AllureHelper.reportValidation(
-                "Re-login despues de logout",
-                onHome ? "Re-login exitoso, Home detectado" : "Re-login fallo, Home no detectado",
-                "Home visible despues de re-login",
-                onHome,
-                "Si la sesion se cerro correctamente, el re-login debe llevar a Home");
-        Assert.assertTrue(onHome,
-                "El re-login despues de logout debe llevar a Home");
     }
 }

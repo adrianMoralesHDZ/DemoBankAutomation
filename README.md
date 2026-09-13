@@ -303,12 +303,15 @@ config.properties
   AllureHelper       (modo de captura de screenshots)
 ```
 
-Cualquier propiedad puede ser sobreescrita desde linea de comandos sin
-modificar el archivo:
+Cualquier propiedad puede ser sobreescrita editando directamente
+`config.properties`:
 
 ```bash
-mvn test -Ddevice.name=emulator-5554
-mvn test -Dallure.screenshots.everyStep=false
+# Cambiar dispositivo:
+#   editar config.properties -> device.name=emulator-5554
+
+# Cambiar modo de captura:
+#   editar config.properties -> allure.screenshots.everyStep=false
 ```
 
 ---
@@ -370,10 +373,13 @@ mediante la propiedad del sistema `allure.screenshots.everyStep`:
 Captura un screenshot en **cada paso** del test, sin importar si pasa o falla.
 Genera un reporte visual paso a paso, similar a Serenity.
 
+En `config.properties`:
+```properties
+allure.screenshots.everyStep=true
+```
+
 ```bash
 mvn test
-# o explicitamente:
-mvn test -Dallure.screenshots.everyStep=true
 ```
 
 **Que se obtiene**: Cada `@Step` del reporte tiene su screenshot del estado
@@ -386,8 +392,13 @@ Captura screenshots **unicamente cuando un test falla**. Los tests que pasan
 no generan capturas, produciendo un reporte mas liviano. Cumple el requisito
 del PDF: *"capturas unicamente ante la ocurrencia de fallas"*.
 
+En `config.properties`:
+```properties
+allure.screenshots.everyStep=false
+```
+
 ```bash
-mvn test -Dallure.screenshots.everyStep=false
+mvn test
 ```
 
 **Que se obtiene**: Los tests exitosos solo tienen la narrativa textual
@@ -402,7 +413,7 @@ screenshot del error + stack trace + detalles del fallo.
 | Screenshot en fallo | SI | SI |
 | Narrativa textual en cada paso | SI | SI |
 | Stack trace en fallo | SI | SI |
-| Comando | `mvn test` | `mvn test -Dallure.screenshots.everyStep=false` |
+| Valor en config.properties | `true` | `false` |
 | Tamaño del reporte | Mayor | Menor |
 | Cumple requisito PDF | - | SI |
 

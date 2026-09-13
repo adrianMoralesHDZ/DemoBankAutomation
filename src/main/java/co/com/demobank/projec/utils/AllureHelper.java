@@ -13,13 +13,47 @@ import java.io.ByteArrayInputStream;
  * <p>
  * Cada metodo produce texto estructurado que describe que se hizo,
  * que valor se envio, que valor devolvio la app y cual fue el resultado.
- * Adicionalmente, cada metodo captura un screenshot del estado actual
- * de la app y lo adjunta al step correspondiente.
  * <p>
- * Esto genera un reporte narrativo con evidencia visual en cada paso,
- * similar a Serenity.
+ * MODO DE CAPTURA DE SCREENSHOTS (configurable via propiedad del sistema):
+ * <p>
+ * Existen dos modos de captura:
+ * <ul>
+ *   <li><b>MODO FLUJO COMPLETO</b> (por defecto): captura un screenshot en
+ *       cada paso del test, sin importar si pasa o falla. Genera un reporte
+ *       visual paso a paso similar a Serenity.</li>
+ *   <li><b>MODO SOLO FALLOS</b>: NO captura screenshots en los pasos del
+ *       flujo. Solo captura cuando un test falla (gestionado por
+ *       TestListener.onTestFailure). Cumple el requisito del PDF de
+ *       "capturas unicamente ante la ocurrencia de fallas".</li>
+ * </ul>
+ * <p>
+ * Como cambiar entre modos:
+ * <pre>
+ *   MODO FLUJO COMPLETO (por defecto):
+ *     mvn test
+ *     mvn test -Dallure.screenshots.everyStep=true
+ *
+ *   MODO SOLO FALLOS:
+ *     mvn test -Dallure.screenshots.everyStep=false
+ * </pre>
  */
 public class AllureHelper {
+
+    // ========================================================================
+    // CONFIGURACION DE MODO DE CAPTURA
+    // ========================================================================
+
+    /**
+     * Flag que controla si se captura screenshot en cada paso del flujo.
+     * <p>
+     * Se lee de la propiedad del sistema {@code allure.screenshots.everyStep}.
+     * Valor por defecto: {@code true} (modo flujo completo).
+     * <p>
+     * Si se establece en {@code false}, los metodos report* NO capturan
+     * screenshots. Solo TestListener.onTestFailure captura en caso de error.
+     */
+    private static final boolean CAPTURE_EVERY_STEP = Boolean.parseBoolean(
+            System.getProperty("allure.screenshots.everyStep", "true"));
 
     // ========================================================================
     // SCREENSHOT BASE
@@ -27,6 +61,8 @@ public class AllureHelper {
 
     /**
      * Captura un screenshot del driver actual y lo adjunta al reporte.
+     * Este metodo SIEMPRE captura, sin importar el modo configurado.
+     * Es usado directamente por TestListener.onTestFailure.
      *
      * @param description descripcion de la captura
      */
@@ -50,16 +86,32 @@ public class AllureHelper {
         }
     }
 
+    /**
+     * Captura un screenshot solo si el modo "flujo completo" esta activo.
+     * Usado internamente por los metodos report*.
+     *
+     * @param description descripcion de la captura
+     */
+    private static void screenshotIfEveryStep(String description) {
+        if (CAPTURE_EVERY_STEP) {
+            screenshot(description);
+        }
+    }
+
     // ========================================================================
-    // METODOS DE NARRATIVA DE FLUJO CON CAPTURA AUTOMATICA (estilo Serenity)
+    // METODOS DE NARRATIVA DE FLUJO (estilo Serenity)
     // ========================================================================
     // Cada metodo:
     //   1. Adjunta texto estructurado con el detalle de la accion/validacion
-    //   2. Captura un screenshot del estado actual de la app
+    //   2. Captura un screenshot SOLO si el modo "flujo completo" esta activo
+    //
+    // En modo "solo fallos", el texto narrativo SI se adjunta (para mantener
+    // el detalle del paso), pero el screenshot se omite.
     // ========================================================================
 
     /**
-     * Reporta una accion realizada sobre la app y captura screenshot.
+     * Reporta una accion realizada sobre la app.
+     * Captura screenshot solo en modo "flujo completo".
      *
      * @param action  que se hizo (ej: "Escribir", "Tap", "Seleccionar")
      * @param element sobre que elemento (ej: "Campo de email", "Boton 'Iniciar sesion'")
@@ -75,11 +127,12 @@ public class AllureHelper {
         }
         sb.append("RESULTADO : ").append(result);
         Allure.addAttachment("Detalle de la accion", "text/plain", sb.toString(), "txt");
-        screenshot(action + " - " + element);
+        screenshotIfEveryStep(action + " - " + element);
     }
 
     /**
-     * Reporta un valor leido de la app y captura screenshot.
+     * Reporta un valor leido de la app.
+     * Captura screenshot solo en modo "flujo completo".
      *
      * @param label     que se leyo (ej: "Saldo consolidado", "Numero de cuenta")
      * @param rawValue  valor crudo obtenido (ej: "$2,455,450.00")
@@ -93,11 +146,12 @@ public class AllureHelper {
             sb.append("VALOR PROCESADO  : ").append(parsed);
         }
         Allure.addAttachment("Valor leido de la app", "text/plain", sb.toString(), "txt");
-        screenshot("Lectura: " + label);
+        screenshotIfEveryStep("Lectura: " + label);
     }
 
     /**
-     * Reporta una validacion con comparacion de valores y captura screenshot.
+     * Reporta una validacion con comparacion de valores.
+     * Captura screenshot solo en modo "flujo completo".
      *
      * @param checkName nombre de la validacion
      * @param actual    valor actual obtenido de la app
@@ -116,11 +170,12 @@ public class AllureHelper {
         }
         sb.append("RESULTADO     : ").append(passed ? "PASS" : "FAIL");
         Allure.addAttachment("Resultado de validacion", "text/plain", sb.toString(), "txt");
-        screenshot("Validacion: " + checkName + " [" + (passed ? "PASS" : "FAIL") + "]");
+        screenshotIfEveryStep("Validacion: " + checkName + " [" + (passed ? "PASS" : "FAIL") + "]");
     }
 
     /**
-     * Reporta una navegacion entre pantallas y captura screenshot.
+     * Reporta una navegacion entre pantallas.
+     * Captura screenshot solo en modo "flujo completo".
      *
      * @param from    pantalla de origen
      * @param to      pantalla de destino
@@ -131,11 +186,12 @@ public class AllureHelper {
         sb.append("NAVEGACION    : ").append(from).append(" -> ").append(to).append("\n");
         sb.append("RESULTADO     : ").append(success ? "Navegacion exitosa" : "Navegacion fallida");
         Allure.addAttachment("Navegacion entre pantallas", "text/plain", sb.toString(), "txt");
-        screenshot("Navegacion: " + from + " -> " + to);
+        screenshotIfEveryStep("Navegacion: " + from + " -> " + to);
     }
 
     /**
-     * Reporta el estado de una pantalla y captura screenshot.
+     * Reporta el estado de una pantalla.
+     * Captura screenshot solo en modo "flujo completo".
      *
      * @param screenName  nombre de la pantalla
      * @param indicators  elementos detectados
@@ -145,7 +201,7 @@ public class AllureHelper {
         sb.append("PANTALLA      : ").append(screenName).append("\n");
         sb.append("INDICADORES   : ").append(indicators);
         Allure.addAttachment("Estado de pantalla", "text/plain", sb.toString(), "txt");
-        screenshot("Pantalla: " + screenName);
+        screenshotIfEveryStep("Pantalla: " + screenName);
     }
 
     // ========================================================================

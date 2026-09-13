@@ -16,6 +16,10 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Modo de captura de screenshots: true = flujo completo, false = solo fallos -->
+        <allure.screenshots.everyStep>true</allure.screenshots.everyStep>
+
         <appium.version>8.6.0</appium.version>
         <selenium.version>4.18.1</selenium.version>
         <testng.version>7.10.2</testng.version>
@@ -129,6 +133,21 @@
                             <value>io.qameta.allure.testng.AllureTestNg</value>
                         </property>
                     </properties>
+                    <!--
+                        Propiedad del sistema para controlar el modo de captura de screenshots.
+
+                        MODO FLUJO COMPLETO (por defecto):
+                            mvn test
+                            mvn test -Dallure.screenshots.everyStep=true
+                            -> Captura screenshot en cada paso del flujo + en fallos
+
+                        MODO SOLO FALLOS:
+                            mvn test -Dallure.screenshots.everyStep=false
+                            -> Captura screenshot unicamente cuando un test falla
+                    -->
+                    <systemPropertyVariables>
+                        <allure.screenshots.everyStep>${allure.screenshots.everyStep}</allure.screenshots.everyStep>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

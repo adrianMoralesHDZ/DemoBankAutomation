@@ -12,11 +12,20 @@ import java.io.StringWriter;
  * Listener de TestNG que gestiona el ciclo de vida de los tests y el
  * reporte de Allure.
  * <p>
- * Los screenshots de cada paso del flujo son capturados automaticamente
- * por AllureHelper (reportAction, reportValidation, reportRead, etc.).
+ * RESPONSABILIDADES:
+ * <ul>
+ *   <li>Registrar el inicio/fin de cada test en consola.</li>
+ *   <li>Capturar screenshot + stack trace cuando un test FALLA.
+ *       Esta captura ocurre SIEMPRE, sin importar el modo configurado.</li>
+ * </ul>
  * <p>
- * Adicionalmente, este listener captura un screenshot extra del estado
- * de error cuando un test falla, junto con el stack trace completo.
+ * MODOS DE CAPTURA (configurados en AllureHelper):
+ * <ul>
+ *   <li><b>MODO FLUJO COMPLETO</b> ({@code -Dallure.screenshots.everyStep=true}):
+ *       AllureHelper captura en cada paso + este listener captura en fallos.</li>
+ *   <li><b>MODO SOLO FALLOS</b> ({@code -Dallure.screenshots.everyStep=false}):
+ *       AllureHelper NO captura en pasos. Solo este listener captura en fallos.</li>
+ * </ul>
  */
 public class TestListener implements ITestListener {
 
@@ -28,6 +37,8 @@ public class TestListener implements ITestListener {
     /**
      * Captura screenshot del estado de error, adjunta el stack trace
      * y metadatos de trazabilidad al reporte de Allure.
+     * <p>
+     * Esta captura SIEMPRE se ejecuta, sin importar el modo configurado.
      */
     @Override
     public void onTestFailure(ITestResult result) {

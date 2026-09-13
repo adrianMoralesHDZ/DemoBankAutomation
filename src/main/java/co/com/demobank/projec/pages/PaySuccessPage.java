@@ -1,37 +1,38 @@
 package co.com.demobank.projec.pages;
 
 import co.com.demobank.projec.utils.DriverFactory;
-import co.com.demobank.projec.utils.OCRUtils;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 /*
  * ============================================================================
- * PAGE OBJECT: PaySuccessPage
+ * PAGE OBJECT: PaySuccessPage (DemoBank)
  * ============================================================================
  *
- * Pantalla de éxito después de pagar un servicio.
- * Muestra el nombre del servicio pagado y el monto.
+ * LOCALIZADORES BASADOS EN DUMP REAL (adb uiautomator dump):
+ *
+ *   "¡Pago exitoso!"                          → titulo (TextView)
+ *   "Pagaste $65.40 de Energía Eléctrica"      → detalle (TextView)
+ *   "Volver al inicio"                        → boton (TextView)
+ *   "Hacer otro pago"                         → boton alternativo
  * ============================================================================
  */
 public class PaySuccessPage {
 
     private final AndroidDriver driver;
 
-    private final By successIcon =
-            By.id("com.demobank.app:id/img_pay_success");
+    // Titulo "¡Pago exitoso!"
+    private final By successTitle =
+            By.xpath("//*[contains(@text,'Pago exitoso')]");
 
-    private final By recipientName =
-            By.id("com.demobank.app:id/txt_pay_recipient_name");
+    // Detalle "Pagaste $X de Servicio"
+    private final By successDetail =
+            By.xpath("//*[contains(@text,'Pagaste')]");
 
-    /** Monto extraído con OCR */
-    private final By displayedAmount =
-            By.xpath("//*[@resource-id='current amount']");
-
+    // Boton "Volver al inicio"
     private final By backToHomeButton =
-            By.id("com.demobank.app:id/btn_pay_back_home");
+            By.xpath("//*[@text='Volver al inicio']");
 
     public PaySuccessPage(AndroidDriver driver) {
         this.driver = driver;
@@ -43,25 +44,43 @@ public class PaySuccessPage {
 
     public boolean isOnSuccessScreen() {
         try {
-            return driver.findElement(successIcon).isDisplayed();
+            return driver.findElement(successTitle).isDisplayed();
         } catch (Exception e) {
             return false;
         }
     }
 
-    public String getRecipientName() {
-        return WaitUtils.waitForVisibility(recipientName).getText();
+    /**
+     * Obtiene el texto completo del detalle.
+     * Ej: "Pagaste $65.40 de Energía Eléctrica"
+     */
+    public String getSuccessDetailText() {
+        return WaitUtils.waitForVisibility(successDetail).getText();
     }
 
-    public String getDisplayedAmountText() {
-        return OCRUtils.extractTextFromElement(
-                WaitUtils.waitForVisibility(displayedAmount)
-        );
+    /**
+     * Obtiene el nombre del servicio pagado.
+     * Extrae de "Pagaste $65.40 de Energía Eléctrica" → "Energía Eléctrica"
+     */
+    public String getServiceName() {
+        String full = getSuccessDetailText();
+        if (full.contains(" de ")) {
+            return full.substring(full.lastIndexOf(" de ") + 4).trim();
+        }
+        return full;
     }
 
-    public double getDisplayedAmount() {
-        return OCRUtils.extractCurrencyAmount(
-                WaitUtils.waitForVisibility(displayedAmount)
-        );
+    /**
+     * Obtiene el monto pagado como texto.
+     * Extrae de "Pagaste $65.40 de Energía Eléctrica" → "$65.40"
+     */
+    public String getAmountText() {
+        String full = getSuccessDetailText();
+        int start = full.indexOf('$');
+        int end = full.indexOf(" de ");
+        if (start >= 0 && end > start) {
+            return full.substring(start, end).trim();
+        }
+        return full;
     }
 }

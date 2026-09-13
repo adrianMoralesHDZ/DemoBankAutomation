@@ -7,49 +7,49 @@
         <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
     </listeners>
 
-    <!-- Módulo 1: Login (4 casos) -->
+    <!-- Modulo 1: Login (5 casos) -->
     <test name="Login Tests">
         <classes>
             <class name="tests.LoginTests"/>
         </classes>
     </test>
 
-    <!-- Módulo 2: Home (4 casos) -->
+    <!-- Modulo 2: Home (6 casos) -->
     <test name="Home Tests">
         <classes>
             <class name="tests.HomeTests"/>
         </classes>
     </test>
 
-    <!-- Módulo 3: Movimientos (4 casos) -->
+    <!-- Modulo 3: Movimientos (4 casos) -->
     <test name="Movements Tests">
         <classes>
             <class name="tests.MovementsTests"/>
         </classes>
     </test>
 
-    <!-- Módulo 4: Transferencias (5 casos) -->
+    <!-- Modulo 4: Transferencias (5 casos, incluye OCR + OpenCV) -->
     <test name="Transfer Tests">
         <classes>
             <class name="tests.TransferTests"/>
         </classes>
     </test>
 
-    <!-- Módulo 5: Pagos de Servicios (4+ casos) -->
+    <!-- Modulo 5: Pagos de Servicios (6 casos) -->
     <test name="Pay Services Tests">
         <classes>
             <class name="tests.PayTests"/>
         </classes>
     </test>
 
-    <!-- Regresión visual con OpenCV (1 caso) -->
+    <!-- Regresion visual del Home con OpenCV -->
     <test name="OpenCV Regression">
         <classes>
             <class name="tests.OpenCVRegressionTest"/>
         </classes>
     </test>
 
-    <!-- Regresión visual paso a paso: Busqueda parcial en Movimientos (OpenCV) -->
+    <!-- Regresion visual paso a paso: Busqueda parcial en Movimientos (OpenCV) -->
     <test name="Movements Visual Regression">
         <classes>
             <class name="tests.MovementsVisualRegressionTest"/>

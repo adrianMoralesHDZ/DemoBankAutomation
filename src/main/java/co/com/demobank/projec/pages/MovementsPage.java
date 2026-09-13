@@ -98,11 +98,27 @@ public class MovementsPage {
 
     /**
      * Escribe en el campo de búsqueda (case-insensitive).
+     * Después espera a que la lista se actualice.
      */
     public void searchFor(String transaction) {
         WebElement field = WaitUtils.waitForVisibility(searchField);
         field.clear();
         field.sendKeys(transaction);
+
+        // Esperar a que la lista se filtre: esperar a que aparezca
+        // al menos un monto o el empty state
+        try {
+            org.openqa.selenium.support.ui.WebDriverWait wait =
+                    new org.openqa.selenium.support.ui.WebDriverWait(driver,
+                            java.time.Duration.ofSeconds(10));
+            wait.until(d -> {
+                java.util.List<WebElement> montos = d.findElements(movementAmount);
+                java.util.List<WebElement> empty = d.findElements(emptyState);
+                return !montos.isEmpty() || !empty.isEmpty();
+            });
+        } catch (Exception e) {
+            System.out.println("[INFO] searchFor: la lista tardó en filtrar");
+        }
     }
 
     /**
@@ -140,10 +156,12 @@ public class MovementsPage {
 
     /**
      * Verifica si estamos en la pantalla de Movimientos.
+     * Usa fluentWait para esperar a que la pantalla cargue.
      */
     public boolean isOnMovementsScreen() {
         try {
-            return driver.findElement(searchField).isDisplayed();
+            WaitUtils.fluentWait(searchField);
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -151,11 +169,11 @@ public class MovementsPage {
 
     /**
      * Verifica si hay al menos un movimiento visible.
-     * Espera hasta que aparezca al menos uno.
+     * Espera hasta que aparezca al menos un monto con "$".
      */
     public boolean hasMovements() {
         try {
-            WaitUtils.waitForVisibility(movementTitle);
+            WaitUtils.fluentWait(movementAmount);
             return true;
         } catch (Exception e) {
             return false;

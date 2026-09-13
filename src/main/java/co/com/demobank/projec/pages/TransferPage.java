@@ -72,6 +72,15 @@ public class TransferPage {
     private final By cuentaAhorrosOption =
             By.xpath("//android.view.ViewGroup[contains(@content-desc,'Cuenta Ahorros')]");
 
+    // Saldo de la cuenta origen mostrado en pantalla de transferencia.
+    // Segun dump: "$1500000.00" esta al lado de "Cuenta Corriente".
+    // Se localiza como el TextView con "$" que sigue al texto "Cuenta Corriente".
+    private final By cuentaCorrienteBalance =
+            By.xpath("//*[@text='Cuenta Corriente']/following::android.widget.TextView[contains(@text,'$')][1]");
+
+    private final By cuentaAhorrosBalance =
+            By.xpath("//*[@text='Cuenta Ahorros']/following::android.widget.TextView[contains(@text,'$')][1]");
+
     // Boton Continuar (ViewGroup con content-desc exacto)
     private final By continueButton =
             By.xpath("//android.view.ViewGroup[@content-desc='Continuar']");
@@ -98,7 +107,11 @@ public class TransferPage {
 
     // Errores
     private final By insufficientBalanceError =
-            By.xpath("//*[contains(@text,'Saldo insuficiente') or contains(@text,'insuficiente')]");
+            By.xpath("//*[contains(@text,'Saldo insuficiente')]");
+
+    // Error de monto inválido (vacío o cero)
+    private final By invalidAmountError =
+            By.xpath("//*[contains(@text,'monto válido') or contains(@text,'monto v')]");
 
     // ========================================================================
     public TransferPage(AndroidDriver driver) {
@@ -196,6 +209,39 @@ public class TransferPage {
             WaitUtils.safeClick(cuentaCorrienteOption);
         }
         System.out.println("Paso 2: Cuenta origen: " + accountShortName);
+    }
+
+    /**
+     * Obtiene el saldo de la cuenta origen mostrado en pantalla.
+     * Segun dump: el saldo "$1500000.00" aparece junto a "Cuenta Corriente".
+     *
+     * @return saldo como double (ej: 1500000.00)
+     */
+    public double getSourceAccountBalance() {
+        try {
+            // Intentar leer saldo de Cuenta Corriente (seleccionada por defecto)
+            WebElement balance = WaitUtils.waitForVisibility(cuentaCorrienteBalance);
+            String text = balance.getText();
+            System.out.println("[TransferPage] Saldo cuenta origen: " + text);
+            return parseAmount(text);
+        } catch (Exception e) {
+            System.out.println("[WARN] No se pudo leer saldo cuenta origen: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Convierte texto con monto a double.
+     * Ej: "$1500000.00" → 1500000.00
+     */
+    private double parseAmount(String text) {
+        if (text == null || text.isEmpty()) return 0;
+        String cleaned = text.replace("$", "").replaceAll("[^0-9.]", "");
+        try {
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /**
@@ -356,7 +402,19 @@ public class TransferPage {
 
     public boolean isInsufficientBalanceErrorDisplayed() {
         try {
-            return driver.findElement(insufficientBalanceError).isDisplayed();
+            return WaitUtils.fluentWait(insufficientBalanceError).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si hay error de monto inválido (vacío o cero).
+     * Mensaje esperado: "Ingresa un monto válido."
+     */
+    public boolean isInvalidAmountErrorDisplayed() {
+        try {
+            return WaitUtils.fluentWait(invalidAmountError).isDisplayed();
         } catch (Exception e) {
             return false;
         }

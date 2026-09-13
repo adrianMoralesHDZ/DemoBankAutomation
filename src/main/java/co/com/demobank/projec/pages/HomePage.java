@@ -65,19 +65,20 @@ public class HomePage {
     private final By accountInfoLine =
             By.xpath("//*[contains(@text,'****')]");
 
-    // Accesos rapidos (segun dump real: los botones son TextView con @text,
-    // NO tienen content-desc. Se localizan por texto.)
+    // Accesos rapidos (segun dump real: los botones son ViewGroup con
+    // content-desc que contiene el nombre. El TextView interno tiene el texto
+    // pero NO es clickeable. Se localiza por content-desc.)
     private final By quickTransfer =
-            By.xpath("//*[@text='Transferir']");
+            By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Transferir')])[1]");
 
     private final By quickMovements =
-            By.xpath("(//*[@text='Movimientos'])[1]");
+            By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Movimientos')])[1]");
 
     private final By quickPay =
-            By.xpath("//*[@text='Pagar']");
+            By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Pagar')])[1]");
 
     private final By quickMore =
-            By.xpath("//*[@text='Más']");
+            By.xpath("(//android.view.ViewGroup[contains(@content-desc,'s')])[1]");
 
     // Link "Ver todos" (movimientos)
     private final By viewAllMovements =
@@ -165,7 +166,6 @@ public class HomePage {
      * Lee el saldo total del TextView nativo y lo convierte a double.
      *
      * El dump real confirma que "$2455450.00" es un TextView con @text.
-     * No requiere OCR.
      *
      * @return saldo consolidado como double (ej: 2455450.00)
      */

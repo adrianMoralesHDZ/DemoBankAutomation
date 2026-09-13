@@ -6,22 +6,23 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Step;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 /*
  * ============================================================================
  * MODULO 4: TRANSFERENCIAS (5 casos - requisito del PDF)
  * ============================================================================
  *
- * JUSTIFICACION DE OCR EN ESTE MODULO:
- *   OCR #3: MONTO TRANSFERIDO EN PANTALLA DE EXITO
- *   - La pantalla muestra el monto en un componente de celebracion
- *     con formato custom, SIN testID confiable.
- *   - OCR valida independientemente del localizador, asegurando
- *     que el monto ENVIADO coincide exactamente con el MOSTRADO.
+ * Los saldos se leen con getText() sobre TextView nativo (localizadores
+ * confiables confirmados con dump real). No se requiere OCR en este modulo
+ * porque los textos de saldo y error son TextView accesibles.
  * ============================================================================
  */
 public class TransferTests {
@@ -52,7 +53,7 @@ public class TransferTests {
     @Test(priority = 1, groups = {"transfer", "happy-path"})
     @Description("Transferencia exitosa de $100.000 al primer contacto (Maria Lopez)")
     @Severity(SeverityLevel.CRITICAL)
-public void testTransferenciaExitosa() {
+    public void testTransferenciaExitosa() {
         double monto = 100000;
 
         stepSelectContact();
@@ -81,7 +82,7 @@ public void testTransferenciaExitosa() {
         // 2. OCR: leer titulo "¡Transferencia exitosa!"
         String titulo = successPage.readSuccessTitle();
         Assert.assertTrue(titulo.toLowerCase().contains("exitosa") ||
-                titulo.toLowerCase().contains("éxito"),
+                        titulo.toLowerCase().contains("éxito"),
                 "El titulo OCR debe contener 'exitosa'. Leido: " + titulo);
 
         // 3. OCR: leer el monto mostrado en pantalla
@@ -123,105 +124,167 @@ public void testTransferenciaExitosa() {
      * CASO 2: Saldo insuficiente.
      */
     @Test(priority = 2, groups = {"transfer", "negative"})
-    @Description("Transferencia mayor al saldo debe mostrar error")
+    @Description("Transferencia mayor al saldo muestra error 'Saldo insuficiente'")
     @Severity(SeverityLevel.CRITICAL)
     public void testSaldoInsuficiente() {
         transferPage.selectFirstContact();
         AllureHelper.screenshot("[Paso 1] Contacto seleccionado");
 
-        // Intentar $3.000.000 (mayor al maximo disponible de $1.500.000)
         transferPage.typeAmount("3000000");
         AllureHelper.screenshot("[Paso 2] Monto excesivo escrito");
 
         transferPage.tapContinue();
         AllureHelper.screenshot("[Paso 3] Resultado");
 
-        // NOTA: La app puede permitir el flujo y mostrar error en confirmacion
-        // o puede validar antes. El assert es informativo.
-        Assert.assertTrue(true, "Test informativo: ver screenshot para resultado");
+        Assert.assertTrue(transferPage.isInsufficientBalanceErrorDisplayed(),
+                "Debe mostrar mensaje de saldo insuficiente");
     }
 
     /**
-     * CASO 3: Monto vacio / cero.
+     * CASO 3: Monto inválido (cero).
      */
     @Test(priority = 3, groups = {"transfer", "negative"})
-    @Description("Monto vacio o cero debe ser bloqueado")
+    @Description("Monto cero debe mostrar error 'Ingresa un monto válido'")
     @Severity(SeverityLevel.CRITICAL)
     public void testMontoInvalido() {
         transferPage.selectFirstContact();
         AllureHelper.screenshot("[Paso 1] Contacto seleccionado");
 
-        // Dejar monto en blanco (solo con $0.00)
+        transferPage.typeAmount("0");
+        AllureHelper.screenshot("[Paso 2] Monto cero escrito");
+
         transferPage.tapContinue();
-        AllureHelper.screenshot("[Resultado] Continuar sin monto");
-        Assert.assertTrue(true, "Test informativo");
+        AllureHelper.screenshot("[Paso 3] Resultado");
+
+        Assert.assertTrue(transferPage.isInvalidAmountErrorDisplayed(),
+                "Debe mostrar mensaje 'Ingresa un monto válido'");
     }
 
     /**
-     * CASO 4: Impacto en saldo origen (pre/post) via OCR.
-     * Valida con OCR:
-     *   - Saldo ANTES de transferir
-     *   - Saldo DESPUES de transferir
-     *   - La diferencia debe ser exactamente el monto transferido
+     * CASO 4: Impacto en saldo (pre/post).
+     *
+     * Valida dos cosas:
+     *   A. Saldo CONSOLIDADO (total) se descuenta exactamente
+     *   B. Saldo de CUENTA CORRIENTE (tarjeta origen) se descuenta exactamente
+     *
+     * Flujo:
+     *   1. Volver al Home → leer saldo consolidado ANTES
+     *   2. Abrir Transferir → seleccionar contacto → leer saldo Cuenta Corriente ANTES
+     *   3. Transferir $200.000
+     *   4. Volver al Home → leer saldo consolidado DESPUES
+     *   5. Tap Cuenta Corriente → leer saldo Cuenta Corriente DESPUES
+     *   6. Validar: ambas diferencias == monto transferido
+     *
+     * Los saldos se leen con getText() sobre TextView nativo (no OCR).
      */
-    @Test(priority = 4, groups = {"transfer", "ocr"})
-    @Description("OCR pre/post: validar descuento exacto en saldo origen")
+    @Test(priority = 4, groups = {"transfer"})
+    @Description("Validar descuento exacto en saldo consolidado y en Cuenta Corriente")
     @Severity(SeverityLevel.CRITICAL)
     public void testImpactoSaldoOrigen() {
-        // 1. Ir al Home para leer saldo
+        double montoTest = 200000.0;
+
+        // 1. Volver al Home y leer saldo CONSOLIDADO antes
         driver().navigate().back();
-        AllureHelper.screenshot("[OCR pre] Volver al Home");
+        double saldoConsolidadoAntes = homePage.getConsolidatedBalanceTextAsAmount();
+        AllureHelper.screenshot("[Pre] Saldo CONSOLIDADO antes: $" + String.format("%.2f", saldoConsolidadoAntes));
 
-        // 2. Leer saldo ANTES con OCR
-        double saldoAntes = stepReadBalanceOCR("leer saldo ANTES");
-        AllureHelper.screenshot("[OCR pre resultado] Saldo ANTES: $" + saldoAntes);
-
-        // 3. Realizar transferencia
+        // 2. Abrir Transferir y leer saldo CUENTA CORRIENTE antes
         homePage.tapQuickTransfer();
         transferPage.selectFirstContact();
-        double montoTest = 200000.0;
+        double saldoCuentaAntes = transferPage.getSourceAccountBalance();
+        AllureHelper.screenshot("[Pre] Saldo Cuenta Corriente antes: $" + String.format("%.2f", saldoCuentaAntes));
+
+        // 3. Realizar transferencia
         transferPage.typeAmount(String.valueOf((long) montoTest));
         transferPage.tapContinue();
         transferPage.tapConfirm();
-        AllureHelper.screenshot("[Transfer OK] Transferencia de $" + montoTest);
+        AllureHelper.screenshot("[Transfer] Transferencia de $" + String.format("%.2f", montoTest));
 
-        // 4. Volver al Home y leer saldo DESPUÉS
-        driver().navigate().back();
-        AllureHelper.screenshot("[OCR post] Volver al Home");
+        // 4. Volver al Home y leer saldo CONSOLIDADO despues
+        new TransferSuccessPage(DriverFactory.getDriver()).tapBackToHome();
+        double saldoConsolidadoDespues = homePage.getConsolidatedBalanceTextAsAmount();
+        AllureHelper.screenshot("[Post] Saldo CONSOLIDADO despues: $" + String.format("%.2f", saldoConsolidadoDespues));
 
-        double saldoDespues = stepReadBalanceOCR("leer saldo DESPUÉS");
-        AllureHelper.screenshot("[OCR post resultado] Saldo DESPUÉS: $" + saldoDespues);
+        // 5. Leer saldo CUENTA CORRIENTE despues
+        homePage.tapCurrentAccountTab();
+        double saldoCuentaDespues = homePage.getAccountBalanceAsAmount();
+        AllureHelper.screenshot("[Post] Saldo Cuenta Corriente despues: $" + String.format("%.2f", saldoCuentaDespues));
 
-        // 5. Validar descuento
-        double diferencia = saldoAntes - saldoDespues;
-        StepValidation.log("Saldo descontado: $" + diferencia + " (esperado ~$" + montoTest + ")");
-        Assert.assertTrue(diferencia >= 0,
-                "El saldo debe haber DESCONTADO despues de transferir. Antes=$" + saldoAntes + ", Despues=$" + saldoDespues);
-    }
+        // 6. Validar descuento en saldo CONSOLIDADO
+        double diferenciaConsolidado = saldoConsolidadoAntes - saldoConsolidadoDespues;
+        Assert.assertEquals(diferenciaConsolidado, montoTest, 0.01,
+                "Saldo CONSOLIDADO debe descontar $" + String.format("%.2f", montoTest)
+                        + ". Antes=$" + String.format("%.2f", saldoConsolidadoAntes)
+                        + ", Despues=$" + String.format("%.2f", saldoConsolidadoDespues)
+                        + ", Diferencia=$" + String.format("%.2f", diferenciaConsolidado));
 
-    @Step("Leer saldo: {0}")
-    private double stepReadBalanceOCR(String description) {
-        return homePage.getConsolidatedBalanceTextAsAmount();
+        // 7. Validar descuento en saldo CUENTA CORRIENTE
+        double diferenciaCuenta = saldoCuentaAntes - saldoCuentaDespues;
+        Assert.assertEquals(diferenciaCuenta, montoTest, 0.01,
+                "Saldo CUENTA CORRIENTE debe descontar $" + String.format("%.2f", montoTest)
+                        + ". Antes=$" + String.format("%.2f", saldoCuentaAntes)
+                        + ", Despues=$" + String.format("%.2f", saldoCuentaDespues)
+                        + ", Diferencia=$" + String.format("%.2f", diferenciaCuenta));
     }
 
     /**
-     * CASO 5: Auditoria - la transferencia aparece en Movimientos.
+     * CASO 5: Auditoría - la transferencia aparece en Movimientos.
+     *
+     * Valida que después de transferir $250.000:
+     *   1. Al ir a Movimientos, aparece el registro de la transferencia
+     *   2. El monto del registro empieza con "-" (débito)
+     *   3. El monto debitado coincide con el valor transferido
      */
     @Test(priority = 5, groups = {"transfer", "audit"})
-    @Description("Auditoria: la transferencia se registra en Movimientos")
+    @Description("Auditoria: transferencia registrada en Movimientos con monto debitado (-)")
     @Severity(SeverityLevel.CRITICAL)
     public void testAuditoriaEnMovimientos() {
-        // Hacer transferencia
-        transferPage.completeTransfer("250000");
-        AllureHelper.screenshot("[Transfer] Transferencia de $75000");
-        // Volver y verificar movimientos
-        driver().navigate().back();
-        AllureHelper.screenshot("[Volver] Despues de transferir");
-        Assert.assertTrue(true, "Test informativo");
+        String montoTransferido = "250000";
+
+        // 1. Hacer transferencia
+        transferPage.completeTransfer(montoTransferido);
+        AllureHelper.screenshot("[Transfer] Transferencia de $" + montoTransferido);
+
+        // 2. Volver al Home
+        new TransferSuccessPage(DriverFactory.getDriver()).tapBackToHome();
+
+        // 3. Ir a Movimientos
+        homePage.tapQuickMovements();
+        movementsPage = new MovementsPage(DriverFactory.getDriver());
+        Assert.assertTrue(movementsPage.isOnMovementsScreen(),
+                "Debe estar en pantalla de Movimientos");
+
+        // 4. Buscar "Transferencia" para filtrar
+        movementsPage.searchFor("Transferencia");
+        Assert.assertTrue(movementsPage.hasMovements(),
+                "Debe haber movimientos de transferencia");
+        AllureHelper.screenshot("[Movimientos] Filtrados por Transferencia");
+
+        // 5. Validar que existe un movimiento con monto negativo igual al transferido
+        List<WebElement> montos = movementsPage.getAllMovementAmounts();
+        Assert.assertFalse(montos.isEmpty(),
+                "Debe haber al menos un monto en movimientos");
+
+        boolean encontrado = false;
+        for (WebElement monto : montos) {
+            String textoMonto = monto.getText();
+            System.out.println("[AUDITORIA] Movimiento: " + textoMonto);
+            // El monto debitado debe empezar con "-" y contener el valor transferido
+            if (textoMonto.startsWith("-") && textoMonto.contains(montoTransferido)) {
+                encontrado = true;
+                break;
+            }
+        }
+
+        Assert.assertTrue(encontrado,
+                "Debe haber un movimiento con monto -$" + montoTransferido
+                        + " (debitado). Montos encontrados: " + montos.size());
+        AllureHelper.screenshot("[Auditoria OK] Transferencia registrada con monto -$" + montoTransferido);
     }
 
+
     // Helper para tomar el driver
-    private org.openqa.selenium.WebDriver driver() {
+    private WebDriver driver() {
         return DriverFactory.getDriver();
     }
 }

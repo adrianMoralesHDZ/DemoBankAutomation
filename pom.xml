@@ -55,12 +55,6 @@
             <version>${tess4j.version}</version>
         </dependency>
 
-        <!-- JavaCV - OpenCV para vision computacional (PDF seccion 6, regla 6.2) -->
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacv-platform</artifactId>
-            <version>${javacv.version}</version>
-        </dependency>
 
         <!-- OpenCV explicito (redundante con JavaCV pero mas claro) -->
         <dependency>

@@ -2,7 +2,6 @@ package tests;
 
 import co.com.demobank.projec.pages.*;
 import co.com.demobank.projec.utils.*;
-import io.qameta.allure.Allure;
 import io.qameta.allure.Description;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
@@ -12,6 +11,25 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+/*
+ * ============================================================================
+ * MODULO 1: LOGIN (4 casos - requisito del PDF)
+ * ============================================================================
+ *
+ * Cubre:
+ *   TC01 - Login exitoso con credenciales validas
+ *   TC02 - Email vacio muestra error
+ *   TC03 - Password vacio muestra error
+ *   TC04 - Toggle mostrar/ocultar password
+ *
+ * REPORTES ALLURE:
+ *   - Cada paso del test esta anotado con @Step para que el reporte
+ *     muestre el detalle paso a paso de la ejecucion.
+ *   - Los screenshots se capturan AUTOMATICAMENTE solo en caso de fallo
+ *     (gestionado por TestListener.onTestFailure).
+ *   - No se adjuntan screenshots en cada paso ni en caso de exito.
+ * ============================================================================
+ */
 public class LoginTests {
 
     private LoginPage loginPage;
@@ -22,128 +40,183 @@ public class LoginTests {
         DriverFactory.getDriver();
         loginPage = new LoginPage(DriverFactory.getDriver());
         homePage = new HomePage(DriverFactory.getDriver());
-
-        AllureHelper.screenshot("[INICIO] App DemoBank recien abierta");
-        AllureHelper.attachPageInfo();
     }
 
     @AfterMethod
     public void tearDown() {
-        // Captura del estado final antes de cerrar
-        AllureHelper.screenshot("[FIN] Estado antes de cerrar sesion");
         DriverFactory.quitDriver();
     }
 
+    // ========================================================================
+    // TC01 - LOGIN EXITOSO
+    // ========================================================================
+
     /**
-     * CASO 1: Autenticacion Exitosa con credenciales validas.
+     * TC01: Autenticacion Exitosa con credenciales validas.
+     *
+     * Flujo:
+     *   1. Verificar que estamos en pantalla de Login
+     *   2. Escribir email valido
+     *   3. Escribir password valido
+     *   4. Tap en boton "Iniciar sesion"
+     *   5. Verificar redireccion al Home
      */
     @Test(priority = 1, groups = {"login", "smoke"})
-    @Description("Login exitoso con credenciales demo@demo.com / 1234 "
-            + "Capturas paso a paso agregadas al reporte Allure.")
+    @Description("TC01 - Login exitoso con credenciales demo@demo.com / 1234. "
+            + "Valida la navegacion hacia Home despues de la autenticacion.")
     @Severity(SeverityLevel.CRITICAL)
     public void testLoginExitoso() {
-        AllureHelper.screenshot("[PASO 1] Pantalla de Login antes de escribir");
-
+        stepVerifyOnLoginScreen();
         stepTypeEmail(TestDataProvider.VALID_EMAIL);
-        AllureHelper.screenshot("[PASO 2] Email escrito: " + TestDataProvider.VALID_EMAIL);
-
         stepTypePassword(TestDataProvider.VALID_PASSWORD);
-        AllureHelper.screenshot("[PASO 3] Password escrito");
-
         stepTapLogin();
-        AllureHelper.screenshot("[PASO 4] Boton 'Iniciar sesion' presionado");
-
-        // Verificar redireccion al Home
         stepVerifyOnHome();
-        AllureHelper.screenshot("[PASO 5] Redirigido al Home EXITOSO ✅");
+    }
+
+    @Step("Verificar que estamos en la pantalla de Login")
+    private void stepVerifyOnLoginScreen() {
+        boolean onLogin = loginPage.isOnLoginScreen();
+        Assert.assertTrue(onLogin, "Debe estar en la pantalla de Login al iniciar");
+        AllureHelper.logAction("Verificar", "Pantalla de Login visible");
     }
 
     @Step("Escribir email: {0}")
     private void stepTypeEmail(String email) {
         loginPage.typeEmail(email);
+        AllureHelper.logAction("Escribir", "Campo email con valor: " + email);
     }
 
     @Step("Escribir password")
     private void stepTypePassword(String password) {
         loginPage.typePassword(password);
+        AllureHelper.logAction("Escribir", "Campo password (oculto)");
     }
 
     @Step("Tap en boton 'Iniciar sesion'")
     private void stepTapLogin() {
         loginPage.tapLoginButton();
+        AllureHelper.logAction("Tap", "Boton 'Iniciar sesion'");
     }
 
-    @Step("Verificar que estamos en el Home")
+    @Step("Verificar que estamos en Home despues del login")
     private void stepVerifyOnHome() {
-        Assert.assertTrue(homePage.isOnHomeScreen(), "Debe estar en Home despues de login");
+        boolean onHome = homePage.isOnHomeScreen();
+        AllureHelper.logValidation("Navegacion a Home", onHome, true, onHome);
+        Assert.assertTrue(onHome, "Debe estar en Home despues de login exitoso");
     }
+
+    // ========================================================================
+    // TC02 - EMAIL VACIO
+    // ========================================================================
 
     /**
-     * CASO 2: Email vacio -> error.
-     *
-     * JUSTIFICACION DE LA PRUEBA (PDF Modulo 1, caso 2):
-     * Validar el comportamiento cuando el email esta vacio:
-     *   - La app DEBE mostrar un mensaje de error
-     *   - La navegacion al Home DEBE estar bloqueada
+     * TC02: Email vacio debe mostrar mensaje de error y bloquear navegacion.
      */
     @Test(priority = 2, groups = {"login", "negative"})
-    @Description("Validacion: email vacio muestra error. Capturas paso a paso.")
+    @Description("TC02 - Email vacio: la app debe mostrar mensaje de error y no permitir continuar.")
     @Severity(SeverityLevel.CRITICAL)
     public void testEmailVacio() {
-        // 1. Limpiar email (es el campo prellenado en DemoBank)
-        loginPage.clearEmail();
-        // 2. Escribir password valido
-        loginPage.typePassword(TestDataProvider.VALID_PASSWORD);
-        AllureHelper.screenshot("[PASO 1] Email vacio, password lleno");
-
-        // 3. Tap login - debe fallar
-        loginPage.tapLoginButton();
-        AllureHelper.screenshot("[PASO 2] Despues de tap login con email vacio");
-
-        // 4. Verificar mensaje de error
-        boolean errorShown = loginPage.isErrorMessageDisplayed();
-        AllureHelper.screenshot("[PASO 3] Mensaje de error visible: " + errorShown);
-        Assert.assertTrue(errorShown, "Debe mostrar error por email vacio");
+        stepClearEmail();
+        stepTypePasswordValid();
+        stepTapLoginExpectingError();
+        stepVerifyErrorMessage("email vacio");
     }
 
+    @Step("Limpiar campo de email")
+    private void stepClearEmail() {
+        loginPage.clearEmail();
+        AllureHelper.logAction("Limpiar", "Campo email");
+    }
+
+    @Step("Escribir password valido")
+    private void stepTypePasswordValid() {
+        loginPage.typePassword(TestDataProvider.VALID_PASSWORD);
+        AllureHelper.logAction("Escribir", "Campo password con valor valido");
+    }
+
+    @Step("Tap en boton 'Iniciar sesion' (se espera error)")
+    private void stepTapLoginExpectingError() {
+        loginPage.tapLoginButton();
+        AllureHelper.logAction("Tap", "Boton 'Iniciar sesion' (esperando error)");
+    }
+
+    @Step("Verificar mensaje de error visible por: {0}")
+    private void stepVerifyErrorMessage(String motivo) {
+        boolean errorShown = loginPage.isErrorMessageDisplayed();
+        AllureHelper.logValidation("Mensaje de error por " + motivo, errorShown, true, errorShown);
+        Assert.assertTrue(errorShown, "Debe mostrar error por " + motivo);
+    }
+
+    // ========================================================================
+    // TC03 - PASSWORD VACIO
+    // ========================================================================
+
     /**
-     * CASO 3: Password vacio -> error.
+     * TC03: Password vacio debe mostrar mensaje de error y bloquear navegacion.
      */
     @Test(priority = 3, groups = {"login", "negative"})
-    @Description("Validacion: password vacio muestra error. Capturas paso a paso.")
+    @Description("TC03 - Password vacio: la app debe mostrar mensaje de error y no permitir continuar.")
     @Severity(SeverityLevel.CRITICAL)
     public void testPasswordVacio() {
-        // Email valido (ya esta prellenado, pero lo reescribimos)
-        loginPage.typeEmail(TestDataProvider.VALID_EMAIL);
-        // Limpiar password
-        loginPage.clearPassword();
-        AllureHelper.screenshot("[PASO 1] Email lleno, password vacio");
-
-        // Tap login - debe fallar
-        loginPage.tapLoginButton();
-        AllureHelper.screenshot("[PASO 2] Despues de tap login con password vacio");
-
-        // Verificar mensaje de error
-        boolean errorShown = loginPage.isErrorMessageDisplayed();
-        AllureHelper.screenshot("[PASO 3] Mensaje de error visible: " + errorShown);
-        Assert.assertTrue(errorShown,
-                "Debe mostrar error por password vacio");
+        stepTypeEmailValid();
+        stepClearPassword();
+        stepTapLoginExpectingError();
+        stepVerifyErrorMessage("password vacio");
     }
 
+    @Step("Escribir email valido")
+    private void stepTypeEmailValid() {
+        loginPage.typeEmail(TestDataProvider.VALID_EMAIL);
+        AllureHelper.logAction("Escribir", "Campo email con valor valido");
+    }
+
+    @Step("Limpiar campo de password")
+    private void stepClearPassword() {
+        loginPage.clearPassword();
+        AllureHelper.logAction("Limpiar", "Campo password");
+    }
+
+    // ========================================================================
+    // TC04 - TOGGLE PASSWORD
+    // ========================================================================
+
     /**
-     * CASO 4: Toggle del campo password.
+     * TC04: Toggle mostrar/ocultar password.
+     *
+     * Valida que el toggle cambia la visibilidad de la contraseña:
+     *   1. Estado inicial: password oculto
+     *   2. Tap toggle: password visible
+     *   3. Tap toggle: password oculto de nuevo
      */
     @Test(priority = 4, groups = {"login"})
-    @Description("Toggle de password: mostrar/ocultar texto. Capturas del antes/despues.")
+    @Description("TC04 - Toggle de password: mostrar y ocultar la contraseña con el boton ojito.")
     @Severity(SeverityLevel.NORMAL)
     public void testTogglePassword() {
-        AllureHelper.screenshot("[PASO 1] Password inicialmente oculto (oculto por defecto)");
+        stepVerifyPasswordHidden();
+        stepTapToggleAndVerifyVisible();
+        stepTapToggleAndVerifyHidden();
+    }
 
+    @Step("Verificar que el password esta inicialmente oculto")
+    private void stepVerifyPasswordHidden() {
+        boolean visible = loginPage.isPasswordVisible();
+        AllureHelper.logValidation("Password oculto (inicial)", !visible, true, !visible);
+        Assert.assertFalse(visible, "El password debe estar oculto por defecto");
+    }
+
+    @Step("Tap en toggle y verificar que el password se hace visible")
+    private void stepTapToggleAndVerifyVisible() {
         loginPage.tapPasswordToggle();
-        AllureHelper.screenshot("[PASO 2] Password visible despues de tap 1");
+        boolean visible = loginPage.isPasswordVisible();
+        AllureHelper.logValidation("Password visible (toggle ON)", visible, true, visible);
+        Assert.assertTrue(visible, "El password debe ser visible despues del primer tap");
+    }
 
+    @Step("Tap en toggle y verificar que el password se oculta de nuevo")
+    private void stepTapToggleAndVerifyHidden() {
         loginPage.tapPasswordToggle();
-        AllureHelper.screenshot("[PASO 3] Password oculto de nuevo despues de tap 2");
-
+        boolean visible = loginPage.isPasswordVisible();
+        AllureHelper.logValidation("Password oculto (toggle OFF)", !visible, true, !visible);
+        Assert.assertFalse(visible, "El password debe estar oculto despues del segundo tap");
     }
 }

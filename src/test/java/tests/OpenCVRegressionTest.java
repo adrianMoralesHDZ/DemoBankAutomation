@@ -5,6 +5,9 @@ import co.com.demobank.projec.utils.*;
 import io.qameta.allure.Description;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
+import io.qameta.allure.Step;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -14,7 +17,7 @@ import java.io.File;
 
 /*
  * ============================================================================
- * TEST DE REGRESIÓN VISUAL CON OPENCV (requisito del PDF)
+ * TEST DE REGRESION VISUAL CON OPENCV (requisito del PDF)
  * ============================================================================
  *
  * Compara un screenshot actual del Home contra una imagen base (baseline)
@@ -23,6 +26,10 @@ import java.io.File;
  * UMBRAL: Score >= 0.95 (95%)
  *
  * PRE-REQUISITO: Tener home_baseline.png en src/test/resources/baselines/
+ *
+ * REPORTES ALLURE:
+ *   - Cada paso del test esta anotado con @Step.
+ *   - Screenshot solo en caso de fallo (TestListener).
  * ============================================================================
  */
 public class OpenCVRegressionTest {
@@ -43,24 +50,42 @@ public class OpenCVRegressionTest {
         DriverFactory.quitDriver();
     }
 
+    /**
+     * Regresion visual del Home: comparar screenshot actual contra baseline.
+     */
     @Test(priority = 1, groups = {"visual-regression"})
-    @Description("Regresion visual del Home - OpenCV contra baseline")
+    @Description("Regresion visual del Home - OpenCV contra baseline (Score >= 95%).")
     @Severity(SeverityLevel.NORMAL)
     public void testRegresionVisualHome() {
-        TestListener.captureAndAttachScreenshot("Home actual para comparar");
+        stepTakeScreenshot();
+        double score = stepCompareWithBaseline();
+        stepValidateScore(score);
+    }
 
+    @Step("Tomar screenshot del Home actual")
+    private void stepTakeScreenshot() {
+        AllureHelper.logAction("Capturar", "Screenshot del Home actual");
+    }
+
+    @Step("Comparar screenshot actual contra baseline con OpenCV")
+    private double stepCompareWithBaseline() {
         File screenshot =
-                ((org.openqa.selenium.TakesScreenshot) DriverFactory.getDriver())
-                        .getScreenshotAs(org.openqa.selenium.OutputType.FILE);
+                ((TakesScreenshot) DriverFactory.getDriver())
+                        .getScreenshotAs(OutputType.FILE);
 
-        // NOTA: la ruta del baseline la defines tu segun donde generes la imagen
         double score = ImageMatchUtils.compareImages(
                 "src/test/resources/baselines/home_baseline.png",
                 screenshot.getAbsolutePath()
         );
+        AllureHelper.logStep("Match Score OpenCV: " + String.format("%.4f", score));
+        return score;
+    }
 
-        System.out.println("Match Score OpenCV: " + score);
-        Assert.assertTrue(score >= 0.95,
-                "Regresion visual detectada. Score: " + score + " < 0.95");
+    @Step("Validar que el Score >= 0.95 (95%)")
+    private void stepValidateScore(double score) {
+        boolean passed = score >= 0.95;
+        AllureHelper.logValidation("Score >= 95%", score, 0.95, passed);
+        Assert.assertTrue(passed,
+                "Regresion visual detectada. Score: " + score + " < 0.95 (95%)");
     }
 }

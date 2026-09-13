@@ -8,32 +8,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
 
-/*
- * ============================================================================
- * UTIL: DriverFactory
- * ============================================================================
- *
- * Configuración actual: DemoBank
- * (https://github.com/.../DemoBank - APK mockeada standalone)
- *
- * CAPABILITIES:
- *   - platformName: Android
- *   - deviceName: ZY22KVZPQ4 (Motorola Edge 50 Pro)
- *   - platformVersion: 16 (Android 16)
- *   - appPackage: com.demobank.app
- *   - appActivity: com.demobank.app.MainActivity
- *   - automationName: UiAutomator2
- *   - autoGrantPermissions: true
- *
- * CREDENCIALES DE PRUEBA (del PDF):
- *   - Email: demo@demo.com
- *   - Password: 1234
- *
- * CUENTAS MOCKEADAS (del PDF):
- *   - Cuenta Corriente: $1,500,000.00
- *   - Cuenta Ahorros: $955,450.00
- *   - Saldo consolidado: $2,455,450.00
- * ============================================================================
+/**
+ * Factory centralizada para la creacion y gestion del AndroidDriver.
+ * <p>
+ * Configura las capabilities de UiAutomator2 para la app DemoBank
+ * y proporciona acceso singleton al driver y al WebDriverWait.
  */
 public class DriverFactory {
 
@@ -45,6 +24,11 @@ public class DriverFactory {
     private static final String APP_PACKAGE = "com.demobank.app";
     private static final String APP_ACTIVITY = "com.demobank.app.MainActivity";
 
+    /**
+     * Obtiene la instancia singleton del driver. Si no existe, la crea.
+     *
+     * @return instancia de AndroidDriver
+     */
     public static AndroidDriver getDriver() {
         if (driver == null) {
             driver = createDriver();
@@ -53,11 +37,21 @@ public class DriverFactory {
         return driver;
     }
 
+    /**
+     * Obtiene el WebDriverWait asociado al driver actual.
+     *
+     * @return instancia de WebDriverWait con timeout de 20 segundos
+     */
     public static WebDriverWait getWait() {
         getDriver();
         return wait;
     }
 
+    /**
+     * Crea el AndroidDriver con las capabilities de DemoBank.
+     *
+     * @return nueva instancia de AndroidDriver
+     */
     private static AndroidDriver createDriver() {
         UiAutomator2Options options = new UiAutomator2Options()
                 .setDeviceName(DEVICE_NAME)
@@ -65,7 +59,6 @@ public class DriverFactory {
                 .setAppPackage(APP_PACKAGE)
                 .setAppActivity(APP_ACTIVITY)
                 .setNoReset(false)
-                // Esperar a que la app se abra antes de continuar
                 .setAppWaitActivity(APP_ACTIVITY)
                 .setAppWaitPackage(APP_PACKAGE)
                 .setAppWaitDuration(Duration.ofSeconds(30))
@@ -78,6 +71,9 @@ public class DriverFactory {
         }
     }
 
+    /**
+     * Cierra el driver actual y libera los recursos.
+     */
     public static void quitDriver() {
         if (driver != null) {
             try { driver.quit(); } catch (Exception ignored) {}

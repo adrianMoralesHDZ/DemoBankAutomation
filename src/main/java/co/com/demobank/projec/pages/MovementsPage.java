@@ -1,162 +1,99 @@
 package co.com.demobank.projec.pages;
 
-import co.com.demobank.projec.utils.DriverFactory;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.Duration;
 import java.util.List;
 
-/*
- * ============================================================================
- * PAGE OBJECT: MovementsPage
- * ============================================================================
- *
- * REPRESENTA: La pantalla de Movimientos (lista de transacciones) de DemoBank.
- *
- * CASOS DE PRUEBA DEL PDF (Módulo 3):
- *   - Buscador de Transacciones (filtro parcial case-insensitive)
- *   - Filtro Avanzado de Ingresos (montos positivos)
- *   - Filtro Avanzado de Gastos (montos negativos)
- *   - Manejo de Estado Vacío (sin resultados)
- * ============================================================================
+/**
+ * Page Object de la pantalla de Movimientos de DemoBank.
+ * <p>
+ * Contiene el buscador, filtros (Ingresos/Gastos/Todos) y la lista
+ * de transacciones.
  */
 public class MovementsPage {
 
     private final AndroidDriver driver;
 
-    // ========================================================================
-    // LOCALIZADORES
-    // ========================================================================
-    // ⚠️ COMPLETAR con los IDs reales de DemoBank cuando tengas la APK
-    // ========================================================================
+    // =========================================================================
+    // Localizadores
+    // =========================================================================
 
-    // Campo de búsqueda (filtro de transacciones).
-    // Segun dump real: TextView con texto "Buscar movimiento", sin resource-id.
     private final By searchField =
             By.xpath("//*[contains(@text,'Buscar movimiento')]");
 
-    // Botón para limpiar búsqueda (aparece cuando hay texto en el search).
-    // Segun dump: no tiene resource-id, buscar por content-desc o icono X.
-    private final By clearSearchButton =
-            By.xpath("//*[contains(@content-desc,'limpiar') or contains(@content-desc,'clear')]");
-
-    // Cada item de movimiento (se repite en lista).
-    // Segun dump: los items son ViewGroup que contienen TextViews con
-   // titulo, categoria y monto. No hay resource-id, usar estructura.
-    private final By movementItem =
-            By.xpath("//android.view.ViewGroup[.//android.widget.TextView[contains(@text,'jul') or contains(@text,'jun')]]");
-
-    // Título del movimiento (descripción, ej: "Transferencia a María López")
-    // Segun dump: es el primer TextView del item que no es fecha ni monto.
-    private final By movementTitle =
-            By.xpath("(//android.widget.TextView[contains(@text,'jul') or contains(@text,'jun')])[1]/preceding::android.widget.TextView[1]");
-
-    // Monto del movimiento (puede ser "+$500.000" ingresos o "-$200.000" gastos)
-    // Segun dump: TextView que contiene "$" en el lado derecho del item.
     private final By movementAmount =
             By.xpath("//android.widget.TextView[contains(@text,'$')]");
 
-    // Categoría del movimiento (ej: "Servicios", "Transferencia")
-    // Segun dump: TextView debajo del titulo con "·" (ej: "Compras · 05 jul")
-    private final By movementCategory =
-            By.xpath("//android.widget.TextView[contains(@text,'·')]");
-
-    // Filtro "Ingresos" (tab superior)
     private final By incomeFilter =
             By.xpath("//*[@text='Ingresos']");
 
-    // Filtro "Gastos" (tab superior)
     private final By expenseFilter =
             By.xpath("//*[@text='Gastos']");
 
-    // Filtro "Todos" (tab superior)
-    private final By allFilter =
-            By.xpath("//*[@text='Todos']");
-
-    // Empty state (cuando no hay resultados).
-    // Segun dump: buscar texto que indique sin resultados.
     private final By emptyState =
             By.xpath("//*[contains(@text,'No hay movimientos que coincidan')]");
 
+    // =========================================================================
+    // Constructor
+    // =========================================================================
 
-    // Empty state texto
-    private final By emptyStateText =
-            By.xpath("//*[contains(@text,'Sin resultados') or contains(@text,'sin resultados')]");
-
-    // ========================================================================
-    // CONSTRUCTOR
-    // ========================================================================
     public MovementsPage(AndroidDriver driver) {
         this.driver = driver;
     }
 
-    // ========================================================================
-    // ACCIONES
-    // ========================================================================
+    // =========================================================================
+    // Acciones
+    // =========================================================================
 
     /**
-     * Escribe en el campo de búsqueda (case-insensitive).
-     * Después espera a que la lista se actualice.
+     * Escribe en el campo de busqueda y espera a que la lista se filtre.
+     *
+     * @param transaction texto a buscar
      */
     public void searchFor(String transaction) {
         WebElement field = WaitUtils.waitForVisibility(searchField);
         field.clear();
         field.sendKeys(transaction);
 
-        // Esperar a que la lista se filtre: esperar a que aparezca
-        // al menos un monto o el empty state
         try {
-            org.openqa.selenium.support.ui.WebDriverWait wait =
-                    new org.openqa.selenium.support.ui.WebDriverWait(driver,
-                            java.time.Duration.ofSeconds(10));
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
             wait.until(d -> {
-                java.util.List<WebElement> montos = d.findElements(movementAmount);
-                java.util.List<WebElement> empty = d.findElements(emptyState);
+                List<WebElement> montos = d.findElements(movementAmount);
+                List<WebElement> empty = d.findElements(emptyState);
                 return !montos.isEmpty() || !empty.isEmpty();
             });
         } catch (Exception e) {
-            System.out.println("[INFO] searchFor: la lista tardó en filtrar");
+            System.out.println("[INFO] searchFor: la lista tardo en filtrar");
         }
     }
 
     /**
-     * Limpia el campo de búsqueda.
-     */
-    public void clearSearch() {
-        WebElement field = WaitUtils.waitForVisibility(searchField);
-        field.clear();
-    }
-
-    /**
-     * Activa el filtro de Ingresos (mostrar solo movimientos positivos).
+     * Activa el filtro de Ingresos (montos positivos).
      */
     public void tapIncomeFilter() {
         WaitUtils.safeClick(incomeFilter);
     }
 
     /**
-     * Activa el filtro de Gastos (mostrar solo movimientos negativos).
+     * Activa el filtro de Gastos (montos negativos).
      */
     public void tapExpenseFilter() {
         WaitUtils.safeClick(expenseFilter);
     }
 
-    /**
-     * Quita todos los filtros (mostrar todo).
-     */
-    public void tapAllFilter() {
-        WaitUtils.safeClick(allFilter);
-    }
-
-    // ========================================================================
-    // MÉTODOS DE ESTADO
-    // ========================================================================
+    // =========================================================================
+    // Metodos de estado
+    // =========================================================================
 
     /**
      * Verifica si estamos en la pantalla de Movimientos.
-     * Usa fluentWait para esperar a que la pantalla cargue.
+     *
+     * @return true si el campo de busqueda esta presente
      */
     public boolean isOnMovementsScreen() {
         try {
@@ -169,7 +106,8 @@ public class MovementsPage {
 
     /**
      * Verifica si hay al menos un movimiento visible.
-     * Espera hasta que aparezca al menos un monto con "$".
+     *
+     * @return true si hay un monto con "$" en pantalla
      */
     public boolean hasMovements() {
         try {
@@ -181,15 +119,9 @@ public class MovementsPage {
     }
 
     /**
-     * Cuenta cuántos movimientos hay visibles.
-     */
-    public int getMovementsCount() {
-        List<WebElement> items = driver.findElements(movementItem);
-        return items.size();
-    }
-
-    /**
-     * Verifica si el empty state está visible.
+     * Verifica si el empty state esta visible.
+     *
+     * @return true si el mensaje de sin resultados esta desplegado
      */
     public boolean isEmptyStateDisplayed() {
         try {
@@ -200,15 +132,9 @@ public class MovementsPage {
     }
 
     /**
-     * Obtiene el texto del empty state.
-     */
-    public String getEmptyStateText() {
-        return WaitUtils.waitForVisibility(emptyStateText).getText();
-    }
-
-    /**
-     * Obtiene los montos de TODOS los movimientos visibles.
-     * Útil para validar que filtró correctamente.
+     * Obtiene los WebElements de todos los montos visibles.
+     *
+     * @return lista de WebElements con monto
      */
     public List<WebElement> getAllMovementAmounts() {
         return driver.findElements(movementAmount);
@@ -217,23 +143,14 @@ public class MovementsPage {
     /**
      * Verifica que todos los montos visibles empiecen con "+" (ingresos).
      *
-     * Recorre cada monto visible en pantalla y verifica que su texto
-     * comience con "+". Si encuentra alguno que no empieza con "+",
-     * retorna false.
-     *
-     * @return true si todos los montos empiezan con "+"
+     * @return true si todos los montos son positivos
      */
     public boolean allAmountsArePositive() {
         List<WebElement> amounts = getAllMovementAmounts();
-        if (amounts.isEmpty()) {
-            return false;
-        }
+        if (amounts.isEmpty()) return false;
         for (WebElement amount : amounts) {
             String text = amount.getText();
-            System.out.println("[VALIDACION] Monto: " + text);
-            if (text == null || !text.startsWith("+")) {
-                return false;
-            }
+            if (text == null || !text.startsWith("+")) return false;
         }
         return true;
     }
@@ -241,19 +158,14 @@ public class MovementsPage {
     /**
      * Verifica que todos los montos visibles empiecen con "-" (gastos).
      *
-     * @return true si todos los montos empiezan con "-"
+     * @return true si todos los montos son negativos
      */
     public boolean allAmountsAreNegative() {
         List<WebElement> amounts = getAllMovementAmounts();
-        if (amounts.isEmpty()) {
-            return false;
-        }
+        if (amounts.isEmpty()) return false;
         for (WebElement amount : amounts) {
             String text = amount.getText();
-            System.out.println("[VALIDACION] Monto: " + text);
-            if (text == null || !text.startsWith("-")) {
-                return false;
-            }
+            if (text == null || !text.startsWith("-")) return false;
         }
         return true;
     }

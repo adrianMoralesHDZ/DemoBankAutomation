@@ -1,73 +1,36 @@
 package co.com.demobank.projec.pages;
 
-import co.com.demobank.projec.utils.DriverFactory;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-import java.util.HashMap;
-import java.util.Map;
-
-/*
- * ============================================================================
- * PAGE OBJECT: HomePage (DemoBank)
- * ============================================================================
- *
- * Pantalla principal con saldos mockeados:
- *   - Saldo total: $2.455.450.00  (debajo: Cuenta Corriente / Ahorros tabs)
- *   - Accesos rapidos: Transferir, Movimientos, Pagar, Mas
- *   - Boton logout (icono arriba a la derecha)
- *
- * CASOS DE PRUEBA DEL PDF (Modulo 2):
- *   - Consistencia del Saldo Consolidado
- *   - Interactividad de Cuentas (cambio entre tabs)
- *   - Accesos rapidos (Transferir, Pagar, Movimientos)
- *   - Cierre de Sesion Seguro (Logout)
- *
- * LOCALIZADORES REALES (adb uiautomator dump):
- *   El dump confirma que TODOS los textos del Home son android.widget.TextView
- *   con atributo @text perfectamente accesible. No hay tarjetas con gradiente
- *   ni componentes graficos sin accesibilidad. Los localizadores nativos
- *   son confiables en este modulo.
- *
- *   Los OCR justificados del PDF se implementan en otros modulos donde
- *   los localizadores nativos NO son confiables (ver TransferTests y
- *   PayTests).
- * ============================================================================
+/**
+ * Page Object de la pantalla Home de DemoBank.
+ * <p>
+ * Muestra el saldo consolidado, tabs de Cuenta Corriente/Ahorros,
+ accesos rapidos (Transferir, Movimientos, Pagar).
  */
 public class HomePage {
 
     private final AndroidDriver driver;
 
-    // ========================================================================
-    // LOCALIZADORES (basados en dump real)
-    // ========================================================================
+    // =========================================================================
+    // Localizadores
+    // =========================================================================
 
-    // Saldo total "$2455450.00" (TextView)
-    // Para OCR usamos cualquier TextView con $ para leer el monto
     private final By balanceForOCR =
             By.xpath("//*[contains(@text,'$') and string-length(@text) > 6]");
 
-    // Etiqueta "Saldo total"
-    private final By balanceLabel =
-            By.xpath("//*[@text='Saldo total']");
-
-    // Boton tab "Cuenta Corriente"
     private final By currentAccountTab =
             By.xpath("//android.view.ViewGroup[@content-desc='Cuenta Corriente']");
 
-    // Boton tab "Cuenta Ahorros"
     private final By savingsAccountTab =
             By.xpath("//android.view.ViewGroup[@content-desc='Cuenta Ahorros']");
 
-    // Linea con numero de cuenta y saldo: "**** 4821 · $1500000.00"
     private final By accountInfoLine =
             By.xpath("//*[contains(@text,'****')]");
 
-    // Accesos rapidos (segun dump real: los botones son ViewGroup con
-    // content-desc que contiene el nombre. El TextView interno tiene el texto
-    // pero NO es clickeable. Se localiza por content-desc.)
     private final By quickTransfer =
             By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Transferir')])[1]");
 
@@ -77,33 +40,17 @@ public class HomePage {
     private final By quickPay =
             By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Pagar')])[1]");
 
-    private final By quickMore =
-            By.xpath("(//android.view.ViewGroup[contains(@content-desc,'s')])[1]");
+    // =========================================================================
+    // Constructor
+    // =========================================================================
 
-    // Link "Ver todos" (movimientos)
-    private final By viewAllMovements =
-            By.xpath("//*[@text='Ver todos']");
-
-    // Boton logout (icono arriba-derecha).
-    // Segun dump real: es un ViewGroup clickeable en [1051,44][1164,156],
-    // sin text ni content-desc. Es el primer ViewGroup clickeable de la
-    // pantalla (arriba a la derecha). No se puede usar @bounds en XPath
-    // porque UiAutomator2 no lo soporta de forma confiable.
-    private final By logoutButton =
-            By.xpath("(//android.view.ViewGroup[@clickable='true'])[1]");
-
-    // Saludo "Hola, Demo"
-    private final By userGreeting =
-            By.xpath("//*[@text='Hola,']");
-
-    // ========================================================================
     public HomePage(AndroidDriver driver) {
         this.driver = driver;
     }
 
-    // ========================================================================
-    // ACCIONES
-    // ========================================================================
+    // =========================================================================
+    // Acciones
+    // =========================================================================
 
     public void tapCurrentAccountTab() {
         WaitUtils.safeClick(currentAccountTab);
@@ -125,86 +72,90 @@ public class HomePage {
         WaitUtils.safeClick(quickPay);
     }
 
-
-    // ========================================================================
-    // MÉTODOS DE ESTADO
-    // ========================================================================
+    // =========================================================================
+    // Metodos de estado
+    // =========================================================================
 
     /**
-     * Verifica si estamos en la pantalla Home.
-     * Estrategia multiple: busca varios indicadores que SOLO existen en Home.
+     * Verifica si estamos en la pantalla Home buscando multiples indicadores.
+     *
+     * @return true si al menos un indicador de Home esta visible
      */
     public boolean isOnHomeScreen() {
         String[] indicators = {
-                "Saldo total",
-                "$2455450",
-                "$1500000",
-                "Transferir",
-                "Movimientos",
-                "Pagar",
-                "Cuenta Corriente",
-                "Cuenta Ahorros"
+                "Saldo total", "$2455450", "$1500000",
+                "Transferir", "Movimientos", "Pagar",
+                "Cuenta Corriente", "Cuenta Ahorros"
         };
 
         for (String indicator : indicators) {
             try {
                 WebElement el = driver.findElement(
-                        By.xpath("//*[contains(@text,'" + indicator + "')]")
-                );
-                if (el.isDisplayed()) {
-                    System.out.println("[OK] isOnHomeScreen: encontrado indicador '"
-                            + indicator + "'");
-                    return true;
-                }
+                        By.xpath("//*[contains(@text,'" + indicator + "')]"));
+                if (el.isDisplayed()) return true;
             } catch (Exception ignored) {}
         }
-        System.out.println("[FAIL] isOnHomeScreen: ningun indicador encontrado");
         return false;
     }
 
     /**
-     * Lee el saldo total del TextView nativo y lo convierte a double.
+     * Obtiene el texto del saldo consolidado mostrado en Home.
      *
-     * El dump real confirma que "$2455450.00" es un TextView con @text.
-     *
-     * @return saldo consolidado como double (ej: 2455450.00)
+     * @return texto del saldo (ej: "$2455450.00")
      */
-    public double getConsolidatedBalanceTextAsAmount() {
-        String text = getConsolidatedBalanceText();
-        return parseAmount(text);
+    public String getConsolidatedBalanceText() {
+        return WaitUtils.waitForVisibility(balanceForOCR).getText();
     }
 
     /**
-     * Convierte texto con monto a double.
+     * Obtiene el saldo consolidado y lo convierte a double.
      *
-     * Acepta formatos como:
-     *   "$2455450.00"                → 2455450.00
-     *   "**** 4821 · $1500000.00"   → 1500000.00  (extrae solo el monto)
-     *   "+$1800.00"                  → 1800.00
-     *   "-$54.20"                    → 54.20
+     * @return saldo consolidado como valor numerico
+     */
+    public double getConsolidatedBalanceTextAsAmount() {
+        return parseAmount(getConsolidatedBalanceText());
+    }
+
+    /**
+     * Obtiene el texto con numero de cuenta y saldo de la cuenta activa.
      *
-     * Estrategia: extrae el ultimo numero con decimales del texto,
-     * eliminando separadores de miles (puntos) y signos no numericos.
+     * @return texto de info de cuenta (ej: "**** 4821 - $1500000.00")
+     */
+    public String getAccountInfoText() {
+        return WaitUtils.waitForVisibility(accountInfoLine).getText();
+    }
+
+    /**
+     * Obtiene el saldo de la cuenta activa y lo convierte a double.
+     *
+     * @return saldo de la cuenta activa como valor numerico
+     */
+    public double getAccountBalanceAsAmount() {
+        return parseAmount(getAccountInfoText());
+    }
+
+    // =========================================================================
+    // Metodos privados
+    // =========================================================================
+
+    /**
+     * Convierte un texto con monto a double.
+     * Maneja separadores de miles (puntos) y decimales.
+     *
+     * @param text texto con monto (ej: "$2455450.00" o "**** 4821 - $1500000.00")
+     * @return valor numerico del monto
      */
     private double parseAmount(String text) {
         if (text == null || text.isEmpty()) return 0;
 
-        // Extraer la parte del monto: buscar "$" y tomar todo despues
-        // Si no hay "$", buscar el ultimo numero con punto decimal
         String amountStr = text;
         int dollarIdx = amountStr.lastIndexOf('$');
         if (dollarIdx >= 0) {
             amountStr = amountStr.substring(dollarIdx + 1);
         }
 
-        // Limpiar: espacios, comas, signos
-        amountStr = amountStr
-                .replaceAll("[^0-9.]", "")
-                .replace(",", "")
-                .trim();
+        amountStr = amountStr.replaceAll("[^0-9.]", "").replace(",", "").trim();
 
-        // Si hay multiples puntos (ej: "1.500.000.00"), interpretar
-        // los primeros como separadores de miles y el ultimo como decimal
         if (amountStr.contains(".")) {
             int lastDot = amountStr.lastIndexOf('.');
             String decimal = amountStr.substring(lastDot);
@@ -219,54 +170,5 @@ public class HomePage {
         } catch (NumberFormatException e) {
             return 0;
         }
-    }
-
-    /**
-     * Obtiene el texto del saldo total ("$2455450.00").
-     */
-    public String getConsolidatedBalanceText() {
-        return WaitUtils.waitForVisibility(balanceForOCR).getText();
-    }
-
-    /**
-     * Obtiene el numero de cuenta y saldo en pantalla.
-     * Ej: "**** 4821 · $1500000.00"
-     */
-    public String getAccountInfoText() {
-        return WaitUtils.waitForVisibility(accountInfoLine).getText();
-    }
-
-    /**
-     * Devuelve el WebElement de la linea de cuenta (usado en test OCR).
-     */
-    public WebElement getAccountInfoElement() {
-        return WaitUtils.waitForVisibility(accountInfoLine);
-    }
-
-    /**
-     * Lee el saldo individual de la cuenta activa y lo convierte a double.
-     *
-     * La linea de cuenta tiene el formato: "**** 4821 · $1500000.00"
-     * Se extrae solo la parte del monto y se parsea a double.
-     *
-     * @return saldo de la cuenta activa como double (ej: 1500000.00)
-     */
-    public double getAccountBalanceAsAmount() {
-        String info = getAccountInfoText();
-        return parseAmount(info);
-    }
-
-    /**
-     * Devuelve el saludo del usuario (ej: "Hola, Demo").
-     */
-    public String getUserGreetingText() {
-        return WaitUtils.waitForVisibility(userGreeting).getText();
-    }
-
-    /**
-     * Devuelve el texto del label "Saldo total".
-     */
-    public String getBalanceLabelText() {
-        return WaitUtils.waitForVisibility(balanceLabel).getText();
     }
 }

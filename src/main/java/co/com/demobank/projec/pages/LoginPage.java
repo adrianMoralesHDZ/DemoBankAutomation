@@ -1,97 +1,75 @@
 package co.com.demobank.projec.pages;
 
-import co.com.demobank.projec.utils.DriverFactory;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
-/*
- * ============================================================================
- * PAGE OBJECT: LoginPage (DemoBank)
- * ============================================================================
- *
- * Página de Login de DemoBank con campos pre-llenados:
- *   - Email precargado: demo@demo.com
- *   - Password precargado: •••• (4 caracteres)
- *
- * ⚠️ LOCALIZADORES BASADOS EN DUMP REAL DE LA APP:
- * Esta versión de DemoBank NO usa resource-id estándar, usa coordenadas
- * (bounds) y descripciones de accessibility (content-desc).
- *
- * Dump realizado con: adb shell uiautomator dump
- * ============================================================================
+import java.time.Duration;
+import java.util.List;
+
+/**
+ * Page Object de la pantalla de Login de DemoBank.
+ * <p>
+ * Contiene los localizadores y metodos de interaccion para:
+ * email, password, boton de login, toggle de password y mensajes de error.
  */
 public class LoginPage {
 
     private final AndroidDriver driver;
 
-    // ========================================================================
-    // LOCALIZADORES (basados en dump real de DemoBank)
-    // ========================================================================
+    // =========================================================================
+    // Localizadores
+    // =========================================================================
 
-    // Campo de email (por posición visual: ~Y=1297, ~X medio)
-    // El campo es el único EditText superior
     private final By emailField =
             By.xpath("(//android.widget.EditText)[1]");
 
-    // Campo de password (segundo EditText)
     private final By passwordField =
             By.xpath("(//android.widget.EditText)[2]");
 
-    // Botón "Iniciar sesión" (identificado por desc)
     private final By loginButton =
             By.xpath("//android.view.ViewGroup[@content-desc='Iniciar sesión']");
 
-    // Toggle de contraseña (ojito).
-    // Segun dump de UiAutomator: es un android.view.ViewGroup clickeable
-    // ubicado como sibling del campo password (2do EditText), dentro del
-    // mismo contenedor padre. NO tiene content-desc ni resource-id.
-    //
-    // XPath: del 2do EditText, buscar el siguiente ViewGroup clickeable.
     private final By passwordToggle =
             By.xpath("(//android.widget.EditText)[2]/following-sibling::android.view.ViewGroup[@clickable='true'][1]");
 
-    // Logo "DemoBank"
-    private final By loginLogo =
-            By.xpath("//*[@text='DB']");
-
-    // Mensaje de error (busca el primer TextView con "Error" o similar)
     private final By errorMessage =
             By.xpath("//*[contains(@text,'Ingresa tu correo')]");
 
-    // ========================================================================
-    // CONSTRUCTOR
-    // ========================================================================
+    // =========================================================================
+    // Constructor
+    // =========================================================================
+
     public LoginPage(AndroidDriver driver) {
         this.driver = driver;
     }
 
-    // ========================================================================
-    // ACCIONES
-    // ========================================================================
+    // =========================================================================
+    // Acciones
+    // =========================================================================
 
     /**
-     * Escribe el email en el campo de email.
-     * Limpia primero para partir de cero.
+     * Escribe el email en el campo correspondiente.
+     *
+     * @param email valor a escribir
      */
     public void typeEmail(String email) {
-        WebElement field = WaitUtils.waitForVisibility(emailField);
-        // field.clear() no funciona bien en DemoBank, usa sendKeys directo
-        field.sendKeys(email);
+        WaitUtils.waitForVisibility(emailField).sendKeys(email);
     }
 
     /**
-     * Escribe la contraseña en el campo de password.
+     * Escribe la contrasena en el campo correspondiente.
+     *
+     * @param password valor a escribir
      */
     public void typePassword(String password) {
-        WebElement field = WaitUtils.waitForVisibility(passwordField);
-        field.sendKeys(password);
+        WaitUtils.waitForVisibility(passwordField).sendKeys(password);
     }
 
     /**
-     * Toca el botón "Iniciar sesión".
-     * Despues espera a que la pantalla cambie (es Home o pantalla de error).
+     * Toca el boton "Iniciar sesion" y espera el cambio de pantalla.
      */
     public void tapLoginButton() {
         WaitUtils.safeClick(loginButton);
@@ -99,34 +77,10 @@ public class LoginPage {
     }
 
     /**
-     * Espera EXPLICITA a que la pantalla cambie despues de login.
-     * Sin Thread.sleep().
-     */
-    private void waitForScreenChange() {
-        try {
-            // Esperar a que el boton "Iniciar sesion" desaparezca
-            org.openqa.selenium.support.ui.WebDriverWait wait =
-                    new org.openqa.selenium.support.ui.WebDriverWait(driver,
-                            java.time.Duration.ofSeconds(10));
-            wait.until(d -> {
-                try {
-                    java.util.List<WebElement> btns = d.findElements(
-                            By.xpath("//*[@text='Iniciar sesión']")
-                    );
-                    return btns.isEmpty() || !btns.get(0).isDisplayed();
-                } catch (Exception e) {
-                    return true;
-                }
-            });
-            System.out.println("[OK] La pantalla cambio despues de tap login");
-        } catch (Exception e) {
-            System.out.println("[WARN] timeout esperando cambio de pantalla: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Login en una sola operación.
-     * Si los campos ya están prellenados, limpia y vuelve a llenar.
+     * Realiza el login completo: email, password y tap en boton.
+     *
+     * @param email    correo valido
+     * @param password contrasena valida
      */
     public void loginAs(String email, String password) {
         typeEmail(email);
@@ -135,15 +89,7 @@ public class LoginPage {
     }
 
     /**
-     * Solo presiona el botón de login (los campos ya están prellenados).
-     * Es el método MÁS USADO en DemoBank porque los campos tienen valores por defecto.
-     */
-    public void tapLogin() {
-        WaitUtils.safeClick(loginButton);
-    }
-
-    /**
-     * Toggle para mostrar/ocultar contraseña (ojito junto al campo password).
+     * Toca el toggle para mostrar/ocultar la contrasena.
      */
     public void tapPasswordToggle() {
         WaitUtils.safeClick(passwordToggle);
@@ -157,19 +103,20 @@ public class LoginPage {
     }
 
     /**
-     * Limpia el campo de password.
+     * Limpia el campo de contrasena.
      */
     public void clearPassword() {
         WaitUtils.waitForVisibility(passwordField).clear();
     }
 
-    // ========================================================================
-    // MÉTODOS DE ESTADO
-    // ========================================================================
+    // =========================================================================
+    // Metodos de estado
+    // =========================================================================
 
     /**
      * Verifica si estamos en la pantalla de Login.
-     * Busca el logo "DB" o el texto "Bienvenido".
+     *
+     * @return true si el logo o el texto de bienvenida estan visibles
      */
     public boolean isOnLoginScreen() {
         try {
@@ -182,7 +129,9 @@ public class LoginPage {
     }
 
     /**
-     * Verifica si hay mensaje de error visible.
+     * Verifica si hay un mensaje de error visible.
+     *
+     * @return true si el mensaje de error esta desplegado
      */
     public boolean isErrorMessageDisplayed() {
         try {
@@ -194,18 +143,38 @@ public class LoginPage {
     }
 
     /**
-     * Devuelve el texto del mensaje de error.
-     */
-    public String getErrorMessageText() {
-        return WaitUtils.waitForVisibility(errorMessage).getText();
-    }
-
-    /**
-     * Verifica si la contraseña está visible (tipo text) u oculta (tipo password).
+     * Verifica si la contrasena esta visible (texto plano) u oculta.
+     *
+     * @return true si la contrasena es visible
      */
     public boolean isPasswordVisible() {
         WebElement field = driver.findElement(passwordField);
         String type = field.getAttribute("password");
         return "false".equals(type);
+    }
+
+    // =========================================================================
+    // Metodos privados
+    // =========================================================================
+
+    /**
+     * Espera explicita a que el boton de login desaparezca
+     * (indica que la pantalla cambio).
+     */
+    private void waitForScreenChange() {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            wait.until(d -> {
+                try {
+                    List<WebElement> btns = d.findElements(
+                            By.xpath("//*[@text='Iniciar sesión']"));
+                    return btns.isEmpty() || !btns.get(0).isDisplayed();
+                } catch (Exception e) {
+                    return true;
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("[WARN] timeout esperando cambio de pantalla: " + e.getMessage());
+        }
     }
 }

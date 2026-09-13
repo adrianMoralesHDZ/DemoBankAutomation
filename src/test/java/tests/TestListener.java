@@ -1,58 +1,95 @@
 package tests;
 
 import co.com.demobank.projec.utils.AllureHelper;
-import co.com.demobank.projec.utils.DriverFactory;
+import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
-/*
- * ============================================================================
- * LISTENER: TestListener
- * ============================================================================
- *
- * Captura screenshots automaticamente:
- *   - En FALLO: captura el estado de error
- *   - En EXITO: captura el estado final del test
- *
- * Usa AllureHelper que:
- *   - Adjunta el screenshot al step activo en Allure
- *   - Adjunta metadata (URL, title)
- *   - Maneja errores sin romper el test
- * ============================================================================
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+/**
+ * Listener de TestNG que gestiona el ciclo de vida de los tests y el
+ * reporte de Allure.
+ * <p>
+ * Captura screenshots automaticamente SOLO ante fallos, cumpliendo
+ * el requisito del PDF: "capturas de pantalla unicamente ante la
+ * ocurrencia de fallas en los casos de prueba."
  */
 public class TestListener implements ITestListener {
 
     @Override
-    public void onTestFailure(ITestResult result) {
-        AllureHelper.screenshot("❌ FALLO - " + result.getName());
-        AllureHelper.attachText(
-                "Test Failure Details",
-                "Test: " + result.getName() + "\n" +
-                "Status: FAILED\n" +
-                "Exception: " + (result.getThrowable() != null ?
-                        result.getThrowable().getMessage() : "N/A")
-        );
-        System.out.println("[TestListener] ❌ Captura de FALLO adjuntada: " + result.getName());
+    public void onTestStart(ITestResult result) {
+        System.out.println("[TestListener] INICIO test: " + result.getMethod().getMethodName());
     }
 
+    /**
+     * Captura screenshot del estado de error, adjunta el stack trace
+     * y metadatos de trazabilidad al reporte de Allure.
+     */
+    @Override
+    public void onTestFailure(ITestResult result) {
+        String testName = result.getName();
+        long duration = result.getEndMillis() - result.getStartMillis();
+
+        AllureHelper.screenshot("FALLO - " + testName);
+
+        Throwable throwable = result.getThrowable();
+        String errorMessage = throwable != null ? throwable.getMessage() : "N/A";
+
+        AllureHelper.attachText(
+                "Detalles del Fallo",
+                "Test: " + testName + "\n" +
+                "Clase: " + result.getTestClass().getName() + "\n" +
+                "Estado: FAILED\n" +
+                "Duracion: " + duration + " ms\n" +
+                "Excepcion: " + (throwable != null ? throwable.getClass().getName() : "N/A") + "\n" +
+                "Mensaje: " + errorMessage + "\n\n" +
+                "Stack Trace:\n" + getStackTrace(throwable)
+        );
+
+        AllureHelper.attachPageInfo();
+
+        System.out.println("[TestListener] FALLO capturado: " + testName);
+    }
+
+    /**
+     * No captura screenshot. El test paso exitosamente.
+     */
     @Override
     public void onTestSuccess(ITestResult result) {
-        AllureHelper.screenshot("✅ EXITO - " + result.getName());
-        System.out.println("[TestListener] ✅ Captura de EXITO adjuntada: " + result.getName());
+        long duration = result.getEndMillis() - result.getStartMillis();
+        System.out.println("[TestListener] EXITO test: " + result.getName()
+                + " | Duracion: " + duration + " ms");
     }
 
-    /**
-     * Captura al iniciar el test (en setUp).
-     */
     @Override
-    public void onTestStart(ITestResult result) {
-        AllureHelper.screenshot("▶ INICIO - " + result.getName());
+    public void onTestSkipped(ITestResult result) {
+        System.out.println("[TestListener] SKIPPED test: " + result.getName());
+    }
+
+    @Override
+    public void onStart(ITestContext context) {
+        System.out.println("[TestListener] INICIO suite: " + context.getName());
+    }
+
+    @Override
+    public void onFinish(ITestContext context) {
+        int passed = context.getPassedTests().size();
+        int failed = context.getFailedTests().size();
+        int skipped = context.getSkippedTests().size();
+        System.out.println("[TestListener] FIN suite: " + context.getName()
+                + " | Pasaron=" + passed + " | Fallaron=" + failed
+                + " | Omitidos=" + skipped);
     }
 
     /**
-     * Helper estatico para capturas intermedias (llamar desde tests).
+     * Convierte el stack trace de una excepcion a String.
      */
-    public static void captureAndAttachScreenshot(String description) {
-        AllureHelper.screenshot(description);
+    private String getStackTrace(Throwable throwable) {
+        if (throwable == null) return "N/A";
+        StringWriter sw = new StringWriter();
+        throwable.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 }

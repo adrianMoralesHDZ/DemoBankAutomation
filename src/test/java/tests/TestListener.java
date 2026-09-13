@@ -12,9 +12,11 @@ import java.io.StringWriter;
  * Listener de TestNG que gestiona el ciclo de vida de los tests y el
  * reporte de Allure.
  * <p>
- * Captura screenshots automaticamente SOLO ante fallos, cumpliendo
- * el requisito del PDF: "capturas de pantalla unicamente ante la
- * ocurrencia de fallas en los casos de prueba."
+ * Los screenshots de cada paso del flujo son capturados automaticamente
+ * por AllureHelper (reportAction, reportValidation, reportRead, etc.).
+ * <p>
+ * Adicionalmente, este listener captura un screenshot extra del estado
+ * de error cuando un test falla, junto con el stack trace completo.
  */
 public class TestListener implements ITestListener {
 
@@ -53,9 +55,6 @@ public class TestListener implements ITestListener {
         System.out.println("[TestListener] FALLO capturado: " + testName);
     }
 
-    /**
-     * No captura screenshot. El test paso exitosamente.
-     */
     @Override
     public void onTestSuccess(ITestResult result) {
         long duration = result.getEndMillis() - result.getStartMillis();

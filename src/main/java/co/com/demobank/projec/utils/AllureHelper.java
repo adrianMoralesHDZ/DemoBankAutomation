@@ -13,17 +13,23 @@ import java.io.ByteArrayInputStream;
  * <p>
  * Cada metodo produce texto estructurado que describe que se hizo,
  * que valor se envio, que valor devolvio la app y cual fue el resultado.
- * Esto genera un reporte narrativo similar a Serenity.
+ * Adicionalmente, cada metodo captura un screenshot del estado actual
+ * de la app y lo adjunta al step correspondiente.
  * <p>
- * Los screenshots se capturan automaticamente solo ante fallos
- * (gestionado por TestListener).
+ * Esto genera un reporte narrativo con evidencia visual en cada paso,
+ * similar a Serenity.
  */
 public class AllureHelper {
 
     // ========================================================================
-    // SCREENSHOT (solo en fallos, via TestListener)
+    // SCREENSHOT BASE
     // ========================================================================
 
+    /**
+     * Captura un screenshot del driver actual y lo adjunta al reporte.
+     *
+     * @param description descripcion de la captura
+     */
     public static void screenshot(String description) {
         try {
             Object driver = DriverFactory.getDriver();
@@ -45,12 +51,15 @@ public class AllureHelper {
     }
 
     // ========================================================================
-    // METODOS DE NARRATIVA DE FLUJO (estilo Serenity)
+    // METODOS DE NARRATIVA DE FLUJO CON CAPTURA AUTOMATICA (estilo Serenity)
+    // ========================================================================
+    // Cada metodo:
+    //   1. Adjunta texto estructurado con el detalle de la accion/validacion
+    //   2. Captura un screenshot del estado actual de la app
     // ========================================================================
 
     /**
-     * Reporta una accion realizada sobre la app.
-     * Registra que se hizo, sobre que elemento, y que resultado se obtuvo.
+     * Reporta una accion realizada sobre la app y captura screenshot.
      *
      * @param action  que se hizo (ej: "Escribir", "Tap", "Seleccionar")
      * @param element sobre que elemento (ej: "Campo de email", "Boton 'Iniciar sesion'")
@@ -66,10 +75,11 @@ public class AllureHelper {
         }
         sb.append("RESULTADO : ").append(result);
         Allure.addAttachment("Detalle de la accion", "text/plain", sb.toString(), "txt");
+        screenshot(action + " - " + element);
     }
 
     /**
-     * Reporta un valor leido de la app.
+     * Reporta un valor leido de la app y captura screenshot.
      *
      * @param label     que se leyo (ej: "Saldo consolidado", "Numero de cuenta")
      * @param rawValue  valor crudo obtenido (ej: "$2,455,450.00")
@@ -83,11 +93,11 @@ public class AllureHelper {
             sb.append("VALOR PROCESADO  : ").append(parsed);
         }
         Allure.addAttachment("Valor leido de la app", "text/plain", sb.toString(), "txt");
+        screenshot("Lectura: " + label);
     }
 
     /**
-     * Reporta una validacion con comparacion de valores.
-     * Muestra que se obtuvo, que se esperaba, la comparacion y el resultado.
+     * Reporta una validacion con comparacion de valores y captura screenshot.
      *
      * @param checkName nombre de la validacion
      * @param actual    valor actual obtenido de la app
@@ -106,10 +116,11 @@ public class AllureHelper {
         }
         sb.append("RESULTADO     : ").append(passed ? "PASS" : "FAIL");
         Allure.addAttachment("Resultado de validacion", "text/plain", sb.toString(), "txt");
+        screenshot("Validacion: " + checkName + " [" + (passed ? "PASS" : "FAIL") + "]");
     }
 
     /**
-     * Reporta una navegacion entre pantallas.
+     * Reporta una navegacion entre pantallas y captura screenshot.
      *
      * @param from    pantalla de origen
      * @param to      pantalla de destino
@@ -120,10 +131,11 @@ public class AllureHelper {
         sb.append("NAVEGACION    : ").append(from).append(" -> ").append(to).append("\n");
         sb.append("RESULTADO     : ").append(success ? "Navegacion exitosa" : "Navegacion fallida");
         Allure.addAttachment("Navegacion entre pantallas", "text/plain", sb.toString(), "txt");
+        screenshot("Navegacion: " + from + " -> " + to);
     }
 
     /**
-     * Reporta el estado de una pantalla (que elementos estan visibles).
+     * Reporta el estado de una pantalla y captura screenshot.
      *
      * @param screenName  nombre de la pantalla
      * @param indicators  elementos detectados
@@ -133,6 +145,7 @@ public class AllureHelper {
         sb.append("PANTALLA      : ").append(screenName).append("\n");
         sb.append("INDICADORES   : ").append(indicators);
         Allure.addAttachment("Estado de pantalla", "text/plain", sb.toString(), "txt");
+        screenshot("Pantalla: " + screenName);
     }
 
     // ========================================================================

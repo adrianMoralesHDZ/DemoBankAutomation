@@ -152,6 +152,15 @@ public class HomePage {
     }
 
     /**
+     * Expone el WebElement del saldo consolidado para validacion OCR.
+     *
+     * @return WebElement que contiene el saldo consolidado
+     */
+    public WebElement getBalanceElement() {
+        return WaitUtils.waitForVisibility(balanceForOCR);
+    }
+
+    /**
      * Obtiene el saldo consolidado y lo convierte a double.
      *
      * @return saldo consolidado como valor numerico

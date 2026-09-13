@@ -145,4 +145,13 @@ public class TransferSuccessPage {
             return "";
         }
     }
+
+    /**
+     * Expone el WebElement del monto para validacion OCR.
+     *
+     * @return WebElement que contiene el monto mostrado
+     */
+    public WebElement getAmountElement() {
+        return WaitUtils.waitForVisibility(amountTextView);
+    }
 }

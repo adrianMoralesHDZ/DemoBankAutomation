@@ -134,6 +134,15 @@ public class TransferPage {
     }
 
     /**
+     * Expone el WebElement del saldo de la cuenta origen para validacion OCR.
+     *
+     * @return WebElement que contiene el saldo de la cuenta origen
+     */
+    public WebElement getSourceAccountBalanceElement() {
+        return WaitUtils.waitForVisibility(cuentaCorrienteBalance);
+    }
+
+    /**
      * Toca el boton "Continuar". Hace scroll si el boton no esta visible.
      */
     public void tapContinue() {

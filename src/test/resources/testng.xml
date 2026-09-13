@@ -42,13 +42,6 @@
         </classes>
     </test>
 
-    <!-- Regresion visual del Home con OpenCV -->
-    <test name="OpenCV Regression">
-        <classes>
-            <class name="tests.OpenCVRegressionTest"/>
-        </classes>
-    </test>
-
     <!-- Regresion visual paso a paso: Busqueda parcial en Movimientos (OpenCV) -->
     <test name="Movements Visual Regression">
         <classes>

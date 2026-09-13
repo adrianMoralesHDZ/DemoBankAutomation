@@ -70,18 +70,16 @@ DemoBankAutomation/
 │       │   ├── MovementsTests.java          # TC09-TC12: Movimientos
 │       │   ├── TransferTests.java           # TC13-TC17: Transferencias (OCR + OpenCV)
 │       │   ├── PayTests.java                # TC18-TC23: Pagos
-│       │   ├── OpenCVRegressionTest.java     # Regresion visual del Home
-│       │   ├── MovementsVisualRegressionTest.java  # Regresion visual paso a paso
+│       │   ├── MovementsVisualRegressionTest.java  # Regresion visual paso a paso (OpenCV)
 │       │   └── TestListener.java             # Captura screenshots en fallos
 │       └── resources/
 │           ├── testng.xml                    # Configuracion de la suite
 │           └── baselines/                    # Imagenes base para OpenCV
-│               ├── home_baseline.png
 │               ├── transfer_success_baseline.png
 │               └── movements_search/         # Baselines del flujo TC09
-│                   ├── 01_home.png
-│                   ├── 02_movements_list.png
-│                   └── 03_search_results.png
+│                   ├── 01_home.png           # Pantalla Home (regresion visual)
+│                   ├── 02_movements_list.png  # Lista de movimientos
+│                   └── 03_search_results.png  # Resultados filtrados
 ├── src/main/resources/
 │   └── config.properties                     # Configuracion del entorno
 └── pom.xml                                  # Dependencias Maven
@@ -144,12 +142,11 @@ El framework implementa **22 casos funcionales** distribuidos en 5 modulos + 2 t
 | TC22 | testMontoInvalido | pay, negative | Monto cero -> error |
 | TC23 | testAuditoriaEnMovimientos | pay, audit | Pago en Movimientos con categoria Servicios |
 
-### Regresion Visual (2 tests)
+### Regresion Visual (1 test, 4 comparaciones)
 
 | # | Test | Grupo | Que valida |
 |---|------|-------|------------|
-| - | testRegresionVisualHome | visual-regression | OpenCV: Home vs baseline (Score >= 95%) |
-| - | testRegresionVisualBusquedaParcial | visual-regression, movements | OpenCV: 3 pantallas del flujo TC09 vs baselines |
+| - | testRegresionVisualBusquedaParcial | visual-regression, movements | OpenCV: 4 pantallas del flujo TC09 vs baselines (Home, Movimientos, Resultados) |
 
 ### Validaciones OCR (3 implementadas)
 
@@ -159,13 +156,12 @@ El framework implementa **22 casos funcionales** distribuidos en 5 modulos + 2 t
 | OCR #2 | TC13 TransferTests | Monto en pantalla de exito | Componente grafico personalizado (card con check verde) |
 | OCR #3 | TC16 TransferTests | Saldo de tarjeta antes/despues | Tarjeta con fondo gradiente y fuente personalizada |
 
-### Validaciones OpenCV (2 implementadas)
+### Validaciones OpenCV (2 tests, 4 comparaciones)
 
 | # | Test | Flujo | Baselines |
 |---|------|-------|-----------|
-| OpenCV #1 | OpenCVRegressionTest | Home | 1 imagen |
-| OpenCV #2 | TransferTests TC13 | Pantalla exito transferencia | 1 imagen |
-| OpenCV #3 | MovementsVisualRegressionTest | Busqueda parcial paso a paso | 3 imagenes |
+| OpenCV #1 | TransferTests TC13 | Pantalla exito transferencia | 1 imagen |
+| OpenCV #2 | MovementsVisualRegressionTest | Busqueda parcial paso a paso | 3 imagenes (Home, Movimientos, Resultados) |
 
 ---
 

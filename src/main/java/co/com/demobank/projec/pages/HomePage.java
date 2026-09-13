@@ -46,6 +46,15 @@ public class HomePage {
     private final By quickPay =
             By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Pagar')])[1]");
 
+    // Icono de cerrar sesion: ViewGroup clickeable hermano del texto "Demo".
+    // El content-desc es un emoji que no renderiza como texto.
+    private final By logoutIcon =
+            By.xpath("//*[@text='Demo']/following-sibling::android.view.ViewGroup[@clickable='true'][1]");
+
+    // Fallback: primer ViewGroup clickeable de la pantalla (esquina sup. derecha)
+    private final By logoutIconFallback =
+            By.xpath("(//android.view.ViewGroup[@clickable='true'])[1]");
+
     // =========================================================================
     // Constructor
     // =========================================================================
@@ -81,21 +90,69 @@ public class HomePage {
     /**
      * Toca el boton de cerrar sesion (icono esquina superior derecha).
      * <p>
-     * El icono de logout esta en bounds=[1051,44][1164,156] pero el centro
-     * exacto (1108,100) cae en el area del status bar y no registra el touch.
-     * Se usa y=120 (un poco mas abajo) para que el touch landing sea correcto.
+     * Localiza el icono dinamicamente por XPath (hermano del texto "Demo"),
+     * lee sus bounds en runtime y calcula el centro con un offset del 65%
+     * de la altura (en lugar del 50% del centro exacto) para evitar que el
+     * touch caiga en el status bar de Android.
      * <p>
+     * Esto funciona en cualquier dispositivo sin importar la resolucion.
      * Usa W3C Actions (PointerInput) que simula un touch real en React Native.
      */
     public void tapLogout() {
+        // 1. Encontrar el icono dinamicamente
+        WebElement icon = findLogoutIcon();
+
+        // 2. Leer bounds reales del elemento en runtime
+        String bounds = icon.getAttribute("bounds");
+        int[] center = parseCenterFromBounds(bounds);
+
+        // 3. Tap con W3C Actions en el centro calculado
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger1");
         Sequence tap = new Sequence(finger, 0);
-        tap.addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), 1108, 120));
+        tap.addAction(finger.createPointerMove(Duration.ZERO,
+                PointerInput.Origin.viewport(), center[0], center[1]));
         tap.addAction(finger.createPointerDown(0));
         tap.addAction(new Pause(finger, Duration.ofMillis(300)));
         tap.addAction(finger.createPointerUp(0));
         driver.perform(Collections.singletonList(tap));
-        System.out.println("[Logout] Tap W3C en (1108, 120) realizado");
+        System.out.println("[Logout] Tap en (" + center[0] + ", " + center[1] + ") - bounds=" + bounds);
+    }
+
+    /**
+     * Busca el icono de logout con fallback.
+     * Estrategia 1: XPath relativo al texto "Demo" (hermano clickeable).
+     * Estrategia 2: primer ViewGroup clickeable de la pantalla.
+     */
+    private WebElement findLogoutIcon() {
+        try {
+            return driver.findElement(logoutIcon);
+        } catch (Exception e) {
+            return driver.findElement(logoutIconFallback);
+        }
+    }
+
+    /**
+     * Parsea los bounds del elemento "[x1,y1][x2,y2]" y calcula el centro.
+     * Usa 65% de la altura (no 50%) para que el touch no caiga en el status bar.
+     *
+     * @param bounds texto de bounds (ej: "[1051,44][1164,156]")
+     * @return int[2] = {centerX, centerY} con offset aplicado
+     */
+    private int[] parseCenterFromBounds(String bounds) {
+        // Formato: [x1,y1][x2,y2]
+        bounds = bounds.replace("[", " ").replace("]", " ").trim();
+        String[] parts = bounds.split("\\s+");
+        int x1 = Integer.parseInt(parts[0]);
+        int y1 = Integer.parseInt(parts[1]);
+        int x2 = Integer.parseInt(parts[2]);
+        int y2 = Integer.parseInt(parts[3]);
+
+        int centerX = (x1 + x2) / 2;
+        // Usar 65% de la altura en lugar del 50% del centro exacto
+        // para evitar que el touch caiga en el status bar
+        int centerY = y1 + (int) ((y2 - y1) * 0.65);
+
+        return new int[]{centerX, centerY};
     }
 
     // =========================================================================

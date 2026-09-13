@@ -6,8 +6,6 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Step;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.testng.Assert;
@@ -15,7 +13,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.util.List;
 
 /**
@@ -200,23 +197,10 @@ public class TransferTests {
      */
     @Step("Paso 6 - OpenCV: regresion visual de pantalla de exito contra baseline")
     private void stepVerifyVisualRegression() {
-        File screenshot = ((TakesScreenshot) DriverFactory.getDriver())
-                .getScreenshotAs(OutputType.FILE);
-
-        String baselinePath = "src/test/resources/baselines/transfer_success_baseline.png";
-        double score = ImageMatchUtils.compareImages(baselinePath, screenshot.getAbsolutePath());
-
-        boolean passed = score >= 0.95;
-        AllureHelper.reportValidation(
-                "OpenCV #2 - Regresion visual pantalla de exito",
-                String.format("Match Score: %.2f%%", score * 100),
-                "Score >= 95.00%",
-                passed,
-                "Compara el screenshot actual contra transfer_success_baseline.png. "
-                        + "Si el score es < 95%, hay una regresion visual en la "
-                        + "pantalla de exito (cambio de layout, colores o iconos).");
-        Assert.assertTrue(passed,
-                "Regresion visual: Score " + score + " < 0.95 (95%)");
+        ImageMatchUtils.assertScreenMatches(
+                "src/test/resources/baselines/",
+                "transfer_success_baseline.png",
+                "Pantalla de exito de transferencia");
     }
 
     // ========================================================================

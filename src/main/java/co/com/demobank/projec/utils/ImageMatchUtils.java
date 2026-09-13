@@ -4,6 +4,14 @@ import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.testng.Assert;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 import static org.bytedeco.opencv.global.opencv_core.CV_32F;
 
@@ -12,6 +20,9 @@ import static org.bytedeco.opencv.global.opencv_core.CV_32F;
  * <p>
  * Compara un screenshot actual contra una imagen baseline y devuelve
  * un score de similitud. El umbral de aprobacion es 0.95 (95%).
+ * <p>
+ * Si la baseline no existe, se captura automaticamente desde la
+ * ejecucion actual y se guarda para futuras comparaciones.
  */
 public class ImageMatchUtils {
 
@@ -43,6 +54,71 @@ public class ImageMatchUtils {
         }
 
         return computeSimilarity(baseline, actual);
+    }
+
+    /**
+     * Toma un screenshot del driver actual. Si la baseline existe, la compara
+     * mediante OpenCV y valida que el Match Score >= 95%. Si la baseline no
+     * existe, la captura y la guarda para futuras comparaciones.
+     * <p>
+     * Reporta el resultado en Allure mediante AllureHelper.
+     *
+     * @param baselineDir  directorio donde estan las baselines
+     * @param baselineName nombre del archivo baseline (ej: "01_home.png")
+     * @param stepName     descripcion del paso para el reporte
+     */
+    public static void assertScreenMatches(String baselineDir, String baselineName, String stepName) {
+        File screenshot = ((TakesScreenshot) DriverFactory.getDriver())
+                .getScreenshotAs(OutputType.FILE);
+
+        String baselinePath = baselineDir + baselineName;
+        File baselineFile = new File(baselinePath);
+
+        if (!baselineFile.exists()) {
+            captureBaseline(screenshot, baselineFile, stepName);
+            return;
+        }
+
+        double score = compareImages(baselinePath, screenshot.getAbsolutePath());
+        boolean passed = score >= MATCH_THRESHOLD;
+
+        AllureHelper.reportValidation(
+                "OpenCV - " + stepName,
+                String.format("Match Score: %.2f%%", score * 100),
+                "Score >= 95.00%",
+                passed,
+                "Baseline: " + baselinePath + " | Si el score es < 95%, hay una "
+                        + "regresion visual en esta pantalla del flujo.");
+        Assert.assertTrue(passed,
+                "Regresion visual en '" + stepName + "': Score " + score + " < 0.95 (95%)");
+    }
+
+    /**
+     * Guarda el screenshot actual como baseline para futuras comparaciones.
+     *
+     * @param screenshot   screenshot capturado por el driver
+     * @param baselineFile archivo destino donde se guarda la baseline
+     * @param stepName      descripcion del paso para el reporte
+     */
+    private static void captureBaseline(File screenshot, File baselineFile, String stepName) {
+        try {
+            File dir = baselineFile.getParentFile();
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            Files.copy(screenshot.toPath(), baselineFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            AllureHelper.reportValidation(
+                    "OpenCV - " + stepName,
+                    "Baseline capturada automaticamente",
+                    "Score >= 95.00% (en futuras ejecuciones)",
+                    true,
+                    "La baseline no existia. Se capturo el screenshot actual "
+                            + "y se guardo en " + baselineFile.getPath() + ". "
+                            + "En la proxima ejecucion se comparara contra esta imagen.");
+        } catch (IOException e) {
+            Assert.fail("No se pudo guardar la baseline en " + baselineFile.getPath()
+                    + ": " + e.getMessage());
+        }
     }
 
     /**

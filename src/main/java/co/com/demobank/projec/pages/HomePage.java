@@ -3,11 +3,13 @@ package co.com.demobank.projec.pages;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Pause;
+import org.openqa.selenium.interactions.PointerInput;
+import org.openqa.selenium.interactions.Sequence;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import java.util.Collections;
 
 /**
  * Page Object de la pantalla Home de DemoBank.
@@ -44,16 +46,6 @@ public class HomePage {
     private final By quickPay =
             By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Pagar')])[1]");
 
-    // Boton de cerrar sesion (icono esquina superior derecha, al lado de "Demo").
-    // El content-desc y el text del TextView son emojis que no renderizan en texto.
-    // Se localiza como el ViewGroup clickeable hermano del texto "Demo".
-    private final By logoutButton =
-            By.xpath("//*[@text='Demo']/following-sibling::android.view.ViewGroup[@clickable='true'][1]");
-
-    // Fallback: el primer ViewGroup clickeable de la pantalla (esquina sup. derecha)
-    private final By logoutButtonFallback =
-            By.xpath("(//android.view.ViewGroup[@clickable='true'])[1]");
-
     // =========================================================================
     // Constructor
     // =========================================================================
@@ -88,36 +80,22 @@ public class HomePage {
 
     /**
      * Toca el boton de cerrar sesion (icono esquina superior derecha).
-     * Usa estrategia con fallbacks:
-     *   1. XPath relativo al texto "Demo" (hermano siguiente clickeable)
-     *   2. Primer ViewGroup clickeable de la pantalla
-     *   3. Tap por coordenadas (centro del area [1051,44][1164,156])
+     * <p>
+     * El icono de logout esta en bounds=[1051,44][1164,156] pero el centro
+     * exacto (1108,100) cae en el area del status bar y no registra el touch.
+     * Se usa y=120 (un poco mas abajo) para que el touch landing sea correcto.
+     * <p>
+     * Usa W3C Actions (PointerInput) que simula un touch real en React Native.
      */
     public void tapLogout() {
-        // 1. Intentar por XPath relativo a "Demo"
-        try {
-            WebElement btn = driver.findElement(logoutButton);
-            btn.click();
-            return;
-        } catch (Exception e1) {
-            System.out.println("[Logout] XPath relativo fallo, intentando fallback");
-        }
-
-        // 2. Fallback: primer ViewGroup clickeable
-        try {
-            WebElement btn = driver.findElement(logoutButtonFallback);
-            btn.click();
-            return;
-        } catch (Exception e2) {
-            System.out.println("[Logout] Fallback ViewGroup fallo, intentando coordenadas");
-        }
-
-        // 3. Fallback final: tap por coordenadas (centro de [1051,44][1164,156])
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        Map<String, Object> args = new HashMap<>();
-        args.put("x", 1107);
-        args.put("y", 100);
-        js.executeScript("mobile: tap", args);
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger1");
+        Sequence tap = new Sequence(finger, 0);
+        tap.addAction(finger.createPointerMove(Duration.ZERO, PointerInput.Origin.viewport(), 1108, 120));
+        tap.addAction(finger.createPointerDown(0));
+        tap.addAction(new Pause(finger, Duration.ofMillis(300)));
+        tap.addAction(finger.createPointerUp(0));
+        driver.perform(Collections.singletonList(tap));
+        System.out.println("[Logout] Tap W3C en (1108, 120) realizado");
     }
 
     // =========================================================================

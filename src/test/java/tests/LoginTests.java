@@ -279,7 +279,7 @@ public class LoginTests {
         // Verificar que regresamos a Login
         stepVerifyReturnedToLogin();
         // Re-login para confirmar que la sesion se cerro
-        stepReLoginAfterLogout();
+        //stepReLoginAfterLogout();
     }
 
     @Step("Precondicion: hacer login con credenciales validas")

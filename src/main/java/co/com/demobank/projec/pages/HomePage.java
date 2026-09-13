@@ -3,13 +3,17 @@ package co.com.demobank.projec.pages;
 import co.com.demobank.projec.utils.WaitUtils;
 import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Page Object de la pantalla Home de DemoBank.
  * <p>
  * Muestra el saldo consolidado, tabs de Cuenta Corriente/Ahorros,
- accesos rapidos (Transferir, Movimientos, Pagar).
+ * accesos rapidos (Transferir, Movimientos, Pagar) y boton de logout.
  */
 public class HomePage {
 
@@ -39,6 +43,16 @@ public class HomePage {
 
     private final By quickPay =
             By.xpath("(//android.view.ViewGroup[contains(@content-desc,'Pagar')])[1]");
+
+    // Boton de cerrar sesion (icono esquina superior derecha, al lado de "Demo").
+    // El content-desc y el text del TextView son emojis que no renderizan en texto.
+    // Se localiza como el ViewGroup clickeable hermano del texto "Demo".
+    private final By logoutButton =
+            By.xpath("//*[@text='Demo']/following-sibling::android.view.ViewGroup[@clickable='true'][1]");
+
+    // Fallback: el primer ViewGroup clickeable de la pantalla (esquina sup. derecha)
+    private final By logoutButtonFallback =
+            By.xpath("(//android.view.ViewGroup[@clickable='true'])[1]");
 
     // =========================================================================
     // Constructor
@@ -70,6 +84,40 @@ public class HomePage {
 
     public void tapQuickPay() {
         WaitUtils.safeClick(quickPay);
+    }
+
+    /**
+     * Toca el boton de cerrar sesion (icono esquina superior derecha).
+     * Usa estrategia con fallbacks:
+     *   1. XPath relativo al texto "Demo" (hermano siguiente clickeable)
+     *   2. Primer ViewGroup clickeable de la pantalla
+     *   3. Tap por coordenadas (centro del area [1051,44][1164,156])
+     */
+    public void tapLogout() {
+        // 1. Intentar por XPath relativo a "Demo"
+        try {
+            WebElement btn = driver.findElement(logoutButton);
+            btn.click();
+            return;
+        } catch (Exception e1) {
+            System.out.println("[Logout] XPath relativo fallo, intentando fallback");
+        }
+
+        // 2. Fallback: primer ViewGroup clickeable
+        try {
+            WebElement btn = driver.findElement(logoutButtonFallback);
+            btn.click();
+            return;
+        } catch (Exception e2) {
+            System.out.println("[Logout] Fallback ViewGroup fallo, intentando coordenadas");
+        }
+
+        // 3. Fallback final: tap por coordenadas (centro de [1051,44][1164,156])
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        Map<String, Object> args = new HashMap<>();
+        args.put("x", 1107);
+        args.put("y", 100);
+        js.executeScript("mobile: tap", args);
     }
 
     // =========================================================================

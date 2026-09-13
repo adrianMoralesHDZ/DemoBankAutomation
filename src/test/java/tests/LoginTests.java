@@ -12,12 +12,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
- * Modulo 1: Login (4 casos).
+ * Modulo 1: Login (5 casos).
  * <p>
  * TC01 - Login exitoso con credenciales validas
  * TC02 - Email vacio muestra error
  * TC03 - Password vacio muestra error
  * TC04 - Toggle mostrar/ocultar password
+ * TC05 - Cierre de sesion (logout) retorna a Login
  */
 public class LoginTests {
 
@@ -245,5 +246,113 @@ public class LoginTests {
                 !visible,
                 "Al desactivar el toggle, el password debe volver a ocultarse");
         Assert.assertFalse(visible, "El password debe estar oculto despues del segundo tap");
+    }
+
+    // ========================================================================
+    // TC05 - CIERRE DE SESION (LOGOUT)
+    // ========================================================================
+
+    /**
+     * TC05: Cierre de sesion seguro (logout).
+     * <p>
+     * Valida que despues de hacer login y estar en Home, al tocar el boton de
+     * cerrar sesion (icono esquina superior derecha) la app retorna a la
+     * pantalla de Login.
+     * <p>
+     * Flujo:
+     *   1. Login con credenciales validas
+     *   2. Verificar que estamos en Home
+     *   3. Tap en boton de cerrar sesion
+     *   4. Verificar que regresamos a Login (OCR + localizador nativo)
+     *   5. Re-login para confirmar que la sesion se cerro correctamente
+     */
+    @Test(priority = 5, groups = {"login", "logout"})
+    @Description("TC05 - Cierre de sesion: desde Home, tap en icono de logout retorna a pantalla de Login.")
+    @Severity(SeverityLevel.CRITICAL)
+    public void testCierreSesion() {
+        // Precondicion: hacer login
+        stepLoginPrecondition();
+        // Verificar que estamos en Home
+        stepVerifyOnHomeForLogout();
+        // Tap en boton de cerrar sesion
+        stepTapLogout();
+        // Verificar que regresamos a Login
+        stepVerifyReturnedToLogin();
+        // Re-login para confirmar que la sesion se cerro
+        stepReLoginAfterLogout();
+    }
+
+    @Step("Precondicion: hacer login con credenciales validas")
+    private void stepLoginPrecondition() {
+        loginPage.loginAs(TestDataProvider.getValidEmail(), TestDataProvider.getValidPassword());
+        AllureHelper.reportAction(
+                "Login", "Credenciales demo@demo.com / ****",
+                TestDataProvider.getValidEmail(), "Login enviado, esperando Home");
+    }
+
+    @Step("Verificar que estamos en Home antes del logout")
+    private void stepVerifyOnHomeForLogout() {
+        boolean onHome = homePage.isOnHomeScreen();
+        String saldo = "";
+        try { saldo = homePage.getConsolidatedBalanceText(); } catch (Exception ignored) {}
+        AllureHelper.reportValidation(
+                "Estamos en Home antes del logout",
+                onHome ? "Home detectado - Saldo: " + saldo : "Home NO detectado",
+                "Pantalla Home visible",
+                onHome,
+                "Debe estar en Home para poder hacer logout");
+        Assert.assertTrue(onHome, "Debe estar en Home antes de hacer logout");
+    }
+
+    @Step("Tap en boton de cerrar sesion (icono esquina superior derecha)")
+    private void stepTapLogout() {
+        homePage.tapLogout();
+        AllureHelper.reportAction(
+                "Tap", "Boton cerrar sesion (ViewGroup junto a texto 'Demo')",
+                null, "Tap realizado, esperando retorno a Login");
+    }
+
+    @Step("Verificar que la app retorno a la pantalla de Login")
+    private void stepVerifyReturnedToLogin() {
+        // 1. Validacion por localizador nativo
+        boolean onLogin = loginPage.isOnLoginScreen();
+
+        // 2. Validacion por OCR: leer texto de la pantalla y buscar "Bienvenido"
+        String ocrText = "";
+        boolean ocrDetectedLogin = false;
+        try {
+            ocrText = OCRUtils.extractFullTextFromScreen(DriverFactory.getDriver());
+            ocrDetectedLogin = ocrText.toLowerCase().contains("bienvenido")
+                    || ocrText.toLowerCase().contains("iniciar sesi");
+        } catch (Exception e) {
+            System.out.println("[Logout] OCR no disponible: " + e.getMessage());
+        }
+
+        boolean returnedToLogin = onLogin || ocrDetectedLogin;
+
+        AllureHelper.reportValidation(
+                "Retorno a Login despues de logout",
+                onLogin ? "Login detectado por localizador nativo"
+                        : (ocrDetectedLogin ? "Login detectado por OCR: '" + ocrText + "'"
+                        : "No se detecto pantalla de Login"),
+                "Pantalla de Login con 'Bienvenido de nuevo' y 'Iniciar sesion'",
+                returnedToLogin,
+                "Despues de cerrar sesion, la app debe mostrar la pantalla de Login");
+        Assert.assertTrue(returnedToLogin,
+                "Despues de logout debe estar en pantalla de Login");
+    }
+
+    @Step("Re-login para confirmar que la sesion se cerro completamente")
+    private void stepReLoginAfterLogout() {
+        loginPage.loginAs(TestDataProvider.getValidEmail(), TestDataProvider.getValidPassword());
+        boolean onHome = homePage.isOnHomeScreen();
+        AllureHelper.reportValidation(
+                "Re-login despues de logout",
+                onHome ? "Re-login exitoso, Home detectado" : "Re-login fallo, Home no detectado",
+                "Home visible despues de re-login",
+                onHome,
+                "Si la sesion se cerro correctamente, el re-login debe llevar a Home");
+        Assert.assertTrue(onHome,
+                "El re-login despues de logout debe llevar a Home");
     }
 }

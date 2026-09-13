@@ -49,4 +49,11 @@
         </classes>
     </test>
 
+    <!-- Regresión visual paso a paso: Busqueda parcial en Movimientos (OpenCV) -->
+    <test name="Movements Visual Regression">
+        <classes>
+            <class name="tests.MovementsVisualRegressionTest"/>
+        </classes>
+    </test>
+
 </suite>

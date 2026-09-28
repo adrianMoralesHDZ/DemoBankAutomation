@@ -467,31 +467,26 @@ config.properties
 
 ## Ejecutar los Tests
 
-### Ejecutar toda la suite
+### Ejecutar por clase (-Dtest)
 
-Asegurate de que Appium Server este corriendo y el dispositivo conectado:
+Si `-Dgroups` no filtra como esperas o quieres ejecutar un solo archivo,
+usa `-Dtest=ClassName`. Esto bypass el filtro por grupo y selecciona
+directamente la clase:
 
 ```bash
-appium
+mvn test -Dtest=LoginTests
+mvn test -Dtest=HomeTests
+mvn test -Dtest=MovementsTests
+mvn test -Dtest=TransferTests
+mvn test -Dtest=PayTests
 ```
 
-En otra terminal:
+Tambien puedes usar patrones:
 
 ```bash
-mvn test
-```
-
-### Ejecutar un grupo especifico
-
-```bash
-mvn test -Dgroups="login"
-mvn test -Dgroups="home"
-mvn test -Dgroups="transfer"
-mvn test -Dgroups="pay"
-mvn test -Dgroups="negative"
-mvn test -Dgroups="ocr"
-mvn test -Dgroups="opencv"
-mvn test -Dgroups="visual-regression"
+mvn test -Dtest=LoginTests#testLoginExitoso          # un solo metodo
+mvn test -Dtest=TransferTests#testTransferenciaExitosa+testSaldoInsuficiente  # 2 metodos
+mvn test -Dtest=*Tests                               # todas las clases que terminen en Tests
 ```
 
 ---

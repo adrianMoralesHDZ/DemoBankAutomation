@@ -35,6 +35,9 @@
 
         <!-- Allure -->
         <allure.version>2.29.0</allure.version>
+
+        <!-- Grupo por defecto a ejecutar (-Dgroups="...") - vacio = todos -->
+        <groups></groups>
     </properties>
 
     <!-- ========================================================= -->
@@ -61,6 +64,20 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.junit.jupiter</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.junit.platform</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Tess4J / Tesseract OCR -->
@@ -165,8 +182,16 @@
                         </suiteXmlFile>
                     </suiteXmlFiles>
 
-                    <!-- Listener de Allure -->
+                    <!-- Mapeo explicito de -Dgroups para que Surefire filtre por grupo -->
+                    <groups>${groups}</groups>
+
+                    <!-- Desactivar autodeteccion de JUnit5/Platform para que Surefire use TestNG -->
                     <properties>
+                        <property>
+                            <name>junit.jupiter.autodetection</name>
+                            <value>false</value>
+                        </property>
+                        <!-- Listener de Allure -->
                         <property>
                             <name>listener</name>
                             <value>
@@ -176,6 +201,16 @@
                     </properties>
 
                 </configuration>
+
+                <!-- Forzar el provider TestNG a nivel de dependencias del plugin -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>3.5.0</version>
+                    </dependency>
+                </dependencies>
+
             </plugin>
 
         </plugins>
